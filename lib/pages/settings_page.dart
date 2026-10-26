@@ -236,6 +236,26 @@ class _SettingsPageState extends State<SettingsPage> {
                     widget.onLocaleChanged(locale);
                   },
                 ),
+                const SizedBox(height: 28),
+                Text(
+                  strings.helpMenu,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline_rounded),
+                    title: Text(strings.about),
+                    subtitle: Text(strings.aboutVersion),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => showAboutDialog(
+                      context: context,
+                      applicationName: 'AIOconvert',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: strings.aboutVersion,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

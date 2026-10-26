@@ -145,7 +145,7 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle.
   ///
   /// In en, this message translates to:
-  /// **'Make every format work for you.'**
+  /// **'Drag and drop files to convert them'**
   String get heroTitle;
 
   /// No description provided for @heroSubtitle.
@@ -165,6 +165,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop files to add them'**
   String get dropHover;
+
+  /// No description provided for @dropMoreFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop more files here, or browse'**
+  String get dropMoreFiles;
 
   /// No description provided for @mediaKinds.
   ///
@@ -189,6 +195,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SAVE TO'**
   String get saveTo;
+
+  /// No description provided for @saveSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Save settings'**
+  String get saveSettings;
+
+  /// No description provided for @saveNextToOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Save next to original'**
+  String get saveNextToOriginal;
+
+  /// No description provided for @saveNextToOriginalAndroidUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Android restricts access to the original folder. Files are saved in app storage.'**
+  String get saveNextToOriginalAndroidUnavailable;
 
   /// No description provided for @loadingFolder.
   ///
@@ -291,6 +315,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel conversion'**
   String get cancel;
+
+  /// No description provided for @closeDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeDialog;
 
   /// No description provided for @removeFile.
   ///

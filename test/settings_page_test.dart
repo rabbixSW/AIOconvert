@@ -6,19 +6,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Linux Settings menu opens the localized settings route', (
+  testWidgets('Settings button opens the localized settings route', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const AioConvertApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Settings').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings').last);
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
     expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Help'), findsOneWidget);
+    expect(find.text('About AIOconvert'), findsOneWidget);
+    await tester.tap(find.text('About AIOconvert'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('A local-first multimedia converter powered by FFmpeg.'),
+      findsNWidgets(2),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('converter shows compact add and save settings controls', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const AioConvertApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Drag and drop files to convert them'), findsOneWidget);
+    expect(find.byTooltip('Save settings'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Save settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save settings'), findsOneWidget);
+    expect(find.text('Save next to original'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

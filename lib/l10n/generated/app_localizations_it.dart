@@ -25,7 +25,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get quit => 'Esci';
 
   @override
-  String get heroTitle => 'Ogni formato, senza complicazioni.';
+  String get heroTitle => 'Trascina i file qui per convertirli';
 
   @override
   String get heroSubtitle =>
@@ -38,6 +38,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dropHover => 'Rilascia i file per aggiungerli';
 
   @override
+  String get dropMoreFiles => 'Rilascia altri file qui o selezionali';
+
+  @override
   String get mediaKinds => 'Video · audio · immagini';
 
   @override
@@ -48,6 +51,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get saveTo => 'SALVA IN';
+
+  @override
+  String get saveSettings => 'Impostazioni di salvataggio';
+
+  @override
+  String get saveNextToOriginal => 'Salva accanto all’originale';
+
+  @override
+  String get saveNextToOriginalAndroidUnavailable =>
+      'Android limita l’accesso alla cartella originale. I file vengono salvati nello spazio dell’app.';
 
   @override
   String get loadingFolder => 'Caricamento cartella…';
@@ -101,6 +114,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get cancel => 'Annulla conversione';
+
+  @override
+  String get closeDialog => 'Chiudi';
 
   @override
   String get removeFile => 'Rimuovi file';

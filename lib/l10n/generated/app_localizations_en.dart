@@ -25,7 +25,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quit => 'Quit';
 
   @override
-  String get heroTitle => 'Make every format work for you.';
+  String get heroTitle => 'Drag and drop files to convert them';
 
   @override
   String get heroSubtitle =>
@@ -38,6 +38,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dropHover => 'Drop files to add them';
 
   @override
+  String get dropMoreFiles => 'Drop more files here, or browse';
+
+  @override
   String get mediaKinds => 'Video · audio · images';
 
   @override
@@ -48,6 +51,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveTo => 'SAVE TO';
+
+  @override
+  String get saveSettings => 'Save settings';
+
+  @override
+  String get saveNextToOriginal => 'Save next to original';
+
+  @override
+  String get saveNextToOriginalAndroidUnavailable =>
+      'Android restricts access to the original folder. Files are saved in app storage.';
 
   @override
   String get loadingFolder => 'Loading folder…';
@@ -101,6 +114,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancel => 'Cancel conversion';
+
+  @override
+  String get closeDialog => 'Close';
 
   @override
   String get removeFile => 'Remove file';

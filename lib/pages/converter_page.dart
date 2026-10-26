@@ -8,7 +8,6 @@ import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +33,7 @@ class _ConverterPageState extends State<ConverterPage> {
   Process? _activeLinuxProcess;
   String? _outputDirectory;
   String? _allFormatExtension;
+  bool _saveNextToOriginal = false;
 
   bool get _hasMixedKinds => _jobs.map((job) => job.kind).toSet().length > 1;
   bool get _canConvert =>
@@ -50,6 +50,9 @@ class _ConverterPageState extends State<ConverterPage> {
   Future<void> _loadOutputDirectory() async {
     final appDirectory = await getApplicationDocumentsDirectory();
     final preferences = await SharedPreferences.getInstance();
+    final saveNextToOriginal =
+        !Platform.isAndroid &&
+        (preferences.getBool('saveNextToOriginal') ?? false);
     final savedPath = !Platform.isAndroid
         ? preferences.getString('outputDirectory')
         : null;
@@ -60,23 +63,113 @@ class _ConverterPageState extends State<ConverterPage> {
         ? directory.path
         : appDirectory.path;
     if (!mounted) return;
-    setState(() => _outputDirectory = selectedDirectory);
+    setState(() {
+      _outputDirectory = selectedDirectory;
+      _saveNextToOriginal = saveNextToOriginal;
+    });
   }
 
-  Future<void> _chooseOutputDirectory() async {
+  Future<void> _showSaveSettings() async {
     final strings = AppLocalizations.of(context)!;
-    final path = await FilePicker.getDirectoryPath(
-      dialogTitle: strings.chooseFolder,
-      initialDirectory: _outputDirectory,
+    var selectedDirectory = _outputDirectory;
+    var saveNextToOriginal = _saveNextToOriginal;
+    final result = await showDialog<({String? directory, bool nextToOriginal})>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(strings.saveSettings),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!Platform.isAndroid)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: saveNextToOriginal,
+                  title: Text(strings.saveNextToOriginal),
+                  onChanged: (value) =>
+                      setDialogState(() => saveNextToOriginal = value ?? false),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    strings.saveNextToOriginalAndroidUnavailable,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              if (!Platform.isAndroid) ...[
+                const SizedBox(height: 8),
+                Text(strings.saveTo, style: _eyebrowStyle(context)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          final directory = selectedDirectory;
+                          return Text(
+                            directory == null
+                                ? strings.loadingFolder
+                                : p.basename(directory),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: strings.chooseFolder,
+                      onPressed: saveNextToOriginal
+                          ? null
+                          : () async {
+                              final path = await FilePicker.getDirectoryPath(
+                                dialogTitle: strings.chooseFolder,
+                                initialDirectory: selectedDirectory,
+                              );
+                              if (path != null) {
+                                setDialogState(() => selectedDirectory = path);
+                              }
+                            },
+                      icon: const Icon(Icons.folder_open_outlined),
+                    ),
+                  ],
+                ),
+              ] else
+                Text(strings.appStorage),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(strings.closeDialog),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, (
+                directory: selectedDirectory,
+                nextToOriginal: saveNextToOriginal,
+              )),
+              child: Text(strings.apply),
+            ),
+          ],
+        ),
+      ),
     );
-    if (path == null || !mounted) return;
-    setState(() => _outputDirectory = path);
+    if (result == null || !mounted) return;
+    setState(() {
+      _outputDirectory = result.directory;
+      _saveNextToOriginal = result.nextToOriginal;
+    });
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString('outputDirectory', path);
+    if (result.directory != null) {
+      await preferences.setString('outputDirectory', result.directory!);
+    }
+    await preferences.setBool('saveNextToOriginal', result.nextToOriginal);
   }
 
   Future<void> _pickFiles() async {
     final result = await FilePicker.pickFiles(type: FileType.any);
+    if (result.isNotEmpty) _clearCompletedForNewBatch();
     for (final file in result) {
       await _addFile(
         file.path ?? file.uri.toString(),
@@ -88,6 +181,9 @@ class _ConverterPageState extends State<ConverterPage> {
 
   Future<void> _addDroppedFiles(List<DropItem> items) async {
     final strings = AppLocalizations.of(context)!;
+    if (items.any((item) => item is! DropItemDirectory)) {
+      _clearCompletedForNewBatch();
+    }
     for (final item in items) {
       if (item is DropItemDirectory) {
         _showMessage(strings.dropFoldersUnsupported);
@@ -211,7 +307,9 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Future<String> _availableOutputPath(MediaJob job) async {
-    final directoryPath = _outputDirectory;
+    final directoryPath = _saveNextToOriginal
+        ? p.dirname(_ffmpegInputPath(job.path))
+        : _outputDirectory;
     if (directoryPath == null) {
       throw StateError(AppLocalizations.of(context)!.outputFolderNotReady);
     }
@@ -413,6 +511,16 @@ class _ConverterPageState extends State<ConverterPage> {
     });
   }
 
+  void _clearCompletedForNewBatch() {
+    if (_isConverting || !_jobs.any((job) => job.state == JobState.complete)) {
+      return;
+    }
+    setState(() {
+      _jobs.removeWhere((job) => job.state == JobState.complete);
+      if (_jobs.isEmpty) _allFormatExtension = null;
+    });
+  }
+
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -425,88 +533,109 @@ class _ConverterPageState extends State<ConverterPage> {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 24,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                borderRadius: BorderRadius.circular(11),
+      appBar: Platform.isLinux
+          ? null
+          : AppBar(
+              titleSpacing: 24,
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(
+                      Icons.swap_horiz_rounded,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  const Text(
+                    'AIOconvert',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
-              child: Icon(Icons.swap_horiz_rounded, color: colors.primary),
-            ),
-            const SizedBox(width: 11),
-            const Text(
-              'AIOconvert',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        actions: Platform.isAndroid
-            ? [
+              actions: [
                 IconButton(
                   tooltip: strings.settings,
                   onPressed: widget.onOpenSettings,
-                  icon: const Icon(Icons.tune_rounded),
+                  icon: const Icon(Icons.settings_outlined),
                 ),
                 const SizedBox(width: 12),
-              ]
-            : null,
-      ),
+              ],
+            ),
       body: Column(
         children: [
-          if (Platform.isLinux) _buildDesktopMenuBar(strings),
           Expanded(
             child: SafeArea(
               top: false,
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1040),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+                  child: Column(
                     children: [
-                      Text(
-                        strings.heroTitle,
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.8,
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+                          children: [
+                            if (Platform.isLinux)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  tooltip: strings.settings,
+                                  onPressed: widget.onOpenSettings,
+                                  icon: const Icon(Icons.settings_outlined),
+                                ),
+                              ),
+                            Text(
+                              strings.heroTitle,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.8,
+                                  ),
                             ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        strings.heroSubtitle,
-                        style: Theme.of(context).textTheme.bodyLarge
-                            ?.copyWith(color: colors.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 24),
-                      _DropZone(
-                        hovering: _isHovering,
-                        onDragEntered: () => setState(() => _isHovering = true),
-                        onDragExited: () => setState(() => _isHovering = false),
-                        onFilesDropped: _addDroppedFiles,
-                        onPickFiles: _pickFiles,
-                      ),
-                      const SizedBox(height: 28),
-                      _buildOutputPanel(context),
-                      const SizedBox(height: 24),
-                      _buildJobsHeader(context),
-                      const SizedBox(height: 12),
-                      if (_jobs.isEmpty)
-                        _buildEmptyState(context)
-                      else
-                        ..._jobs.map(
-                          (job) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _buildJobCard(context, job),
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              strings.heroSubtitle,
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 20),
+                            _DropZone(
+                              hovering: _isHovering,
+                              compact: _jobs.isNotEmpty,
+                              onDragEntered: () =>
+                                  setState(() => _isHovering = true),
+                              onDragExited: () =>
+                                  setState(() => _isHovering = false),
+                              onFilesDropped: _addDroppedFiles,
+                              onPickFiles: _pickFiles,
+                            ),
+                            const SizedBox(height: 18),
+                            _buildJobsHeader(context),
+                            const SizedBox(height: 12),
+                            if (_jobs.isEmpty)
+                              _buildEmptyState(context)
+                            else
+                              ..._jobs.map(
+                                (job) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _buildJobCard(context, job),
+                                ),
+                              ),
+                            if (_jobs.isEmpty) ...[
+                              const SizedBox(height: 14),
+                              _buildFooter(context),
+                            ],
+                          ],
                         ),
-                      const SizedBox(height: 14),
-                      _buildFooter(context),
+                      ),
+                      _buildOutputPanel(context),
                     ],
                   ),
                 ),
@@ -518,64 +647,7 @@ class _ConverterPageState extends State<ConverterPage> {
     );
   }
 
-  Widget _buildDesktopMenuBar(AppLocalizations strings) => MenuBar(
-    children: [
-      SubmenuButton(
-        menuChildren: [
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.add),
-            onPressed: _pickFiles,
-            child: Text(strings.browseFiles),
-          ),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: _jobs.isEmpty
-                ? null
-                : () => setState(() {
-                    _jobs.clear();
-                    _allFormatExtension = null;
-                  }),
-            child: Text(strings.clearQueue),
-          ),
-          const Divider(),
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.exit_to_app),
-            onPressed: SystemNavigator.pop,
-            child: Text(strings.quit),
-          ),
-        ],
-        child: Text(strings.fileMenu),
-      ),
-      SubmenuButton(
-        menuChildren: [
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.tune_rounded),
-            onPressed: widget.onOpenSettings,
-            child: Text(strings.settings),
-          ),
-        ],
-        child: Text(strings.settings),
-      ),
-      SubmenuButton(
-        menuChildren: [
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.info_outline),
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: 'AIOconvert',
-              applicationVersion: '1.0.0',
-              applicationLegalese: strings.aboutVersion,
-            ),
-            child: Text(strings.about),
-          ),
-        ],
-        child: Text(strings.helpMenu),
-      ),
-    ],
-  );
-
   Widget _buildOutputPanel(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final commonKind = _jobs.isEmpty || _hasMixedKinds
         ? null
         : _jobs.first.kind;
@@ -586,118 +658,127 @@ class _ConverterPageState extends State<ConverterPage> {
         formats.any((format) => format.extension == _allFormatExtension)
         ? _allFormatExtension
         : null;
+    final strings = AppLocalizations.of(context)!;
     return Card(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final narrow = constraints.maxWidth < 700;
-            final strings = AppLocalizations.of(context)!;
-            final formatControl = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(strings.formatAll, style: _eyebrowStyle(context)),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: narrow ? double.infinity : 230,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: allFormatValue,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      hintText: _hasMixedKinds
-                          ? strings.setEachFile
-                          : strings.chooseFormat,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 13,
+            final narrow = constraints.maxWidth < 600;
+            final formatDropdown = DropdownButtonFormField<String>(
+              initialValue: allFormatValue,
+              isExpanded: true,
+              decoration: InputDecoration(
+                hintText: _hasMixedKinds
+                    ? strings.setEachFile
+                    : strings.chooseFormat,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+              ),
+              items: formats
+                  .map(
+                    (format) => DropdownMenuItem(
+                      value: format.extension,
+                      child: Text(
+                        format.label,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    items: formats
-                        .map(
-                          (format) => DropdownMenuItem(
-                            value: format.extension,
-                            child: Text(
-                              format.label,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: commonKind == null ? null : _setAllFormat,
-                  ),
-                ),
-              ],
+                  )
+                  .toList(),
+              onChanged: commonKind == null ? null : _setAllFormat,
             );
-            final folderControl = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(strings.saveTo, style: _eyebrowStyle(context)),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: narrow ? constraints.maxWidth : 220,
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: Platform.isAndroid
-                        ? null
-                        : _chooseOutputDirectory,
-                    icon: const Icon(Icons.folder_open_outlined, size: 18),
-                    label: Text(
-                      _outputDirectory == null
-                          ? strings.loadingFolder
-                          : Platform.isAndroid
-                          ? strings.appStorage
-                          : p.basename(_outputDirectory!),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
+            final saveButton = IconButton(
+              tooltip: strings.saveSettings,
+              onPressed: _showSaveSettings,
+              icon: Icon(
+                Icons.folder_outlined,
+                color: _saveNextToOriginal
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+              ),
+            );
+            final convertButton = FilledButton.icon(
+              onPressed: _isConverting
+                  ? _cancelConversion
+                  : (_canConvert ? _convertAll : null),
+              icon: Icon(
+                _isConverting ? Icons.stop_rounded : Icons.bolt_rounded,
+              ),
+              label: Text(
+                _isConverting ? strings.stopConversion : strings.convertAll,
+              ),
             );
             return narrow
                 ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      formatControl,
-                      const SizedBox(height: 16),
-                      folderControl,
-                      if (_hasMixedKinds) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          strings.mixedMediaWarning,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colors.onSurfaceVariant),
-                        ),
-                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  strings.formatAll,
+                                  style: _eyebrowStyle(context),
+                                ),
+                                const SizedBox(height: 4),
+                                formatDropdown,
+                                if (_hasMixedKinds)
+                                  Text(
+                                    strings.mixedMediaWarning,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          saveButton,
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(width: double.infinity, child: convertButton),
                     ],
                   )
                 : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(child: formatControl),
-                      const SizedBox(width: 24),
-                      folderControl,
-                      const SizedBox(width: 12),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 24),
-                        child: SizedBox(
-                          height: 56,
-                          child: FilledButton.icon(
-                            onPressed: _isConverting
-                                ? _cancelConversion
-                                : (_canConvert ? _convertAll : null),
-                            icon: Icon(
-                              _isConverting
-                                  ? Icons.stop_rounded
-                                  : Icons.bolt_rounded,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.formatAll,
+                              style: _eyebrowStyle(context),
                             ),
-                            label: Text(
-                              _isConverting
-                                  ? strings.stopConversion
-                                  : strings.convertAll,
-                            ),
-                          ),
+                            const SizedBox(height: 4),
+                            formatDropdown,
+                            if (_hasMixedKinds)
+                              Text(
+                                strings.mixedMediaWarning,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                          ],
                         ),
                       ),
+                      saveButton,
+                      const SizedBox(width: 8),
+                      convertButton,
                     ],
                   );
           },
@@ -713,7 +794,7 @@ class _ConverterPageState extends State<ConverterPage> {
     return Row(
       children: [
         Text(
-          'Your files',
+          strings.filesTitle,
           style: Theme.of(context).textTheme.titleLarge
               ?.copyWith(fontWeight: FontWeight.w700),
         ),
@@ -1006,6 +1087,7 @@ class _MediaInspection {
 class _DropZone extends StatelessWidget {
   const _DropZone({
     required this.hovering,
+    required this.compact,
     required this.onDragEntered,
     required this.onDragExited,
     required this.onFilesDropped,
@@ -1013,6 +1095,7 @@ class _DropZone extends StatelessWidget {
   });
 
   final bool hovering;
+  final bool compact;
   final VoidCallback onDragEntered;
   final VoidCallback onDragExited;
   final ValueChanged<List<DropItem>> onFilesDropped;
@@ -1028,7 +1111,10 @@ class _DropZone extends StatelessWidget {
       onDragDone: (details) async => onFilesDropped(details.files),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 14 : 20,
+          vertical: compact ? 8 : 25,
+        ),
         decoration: BoxDecoration(
           color: hovering
               ? colors.primaryContainer.withValues(alpha: .28)
@@ -1040,34 +1126,48 @@ class _DropZone extends StatelessWidget {
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: compact ? 30 : 48,
+              height: compact ? 30 : 48,
               decoration: BoxDecoration(
                 color: colors.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(Icons.file_upload_outlined, color: colors.primary),
             ),
-            const SizedBox(height: 13),
+            SizedBox(height: compact ? 3 : 13),
             Text(
-              hovering ? strings.dropHover : strings.dropPrompt,
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              compact
+                  ? (hovering ? strings.dropHover : strings.dropMoreFiles)
+                  : (hovering ? strings.dropHover : strings.dropPrompt),
+              style:
+                  (compact
+                          ? Theme.of(context).textTheme.bodyMedium
+                          : Theme.of(context).textTheme.titleMedium)
+                      ?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 5),
-            Text(
-              strings.mediaKinds,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: colors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: onPickFiles,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(strings.browseFiles),
-            ),
+            if (!compact) ...[
+              const SizedBox(height: 5),
+              Text(
+                strings.mediaKinds,
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: onPickFiles,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(strings.browseFiles),
+              ),
+            ] else ...[
+              TextButton.icon(
+                onPressed: onPickFiles,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(strings.browseFiles),
+              ),
+            ],
           ],
         ),
       ),

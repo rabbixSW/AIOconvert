@@ -15,13 +15,15 @@ flutter run -d linux
 flutter run -d <android-device-id>
 ```
 
-Choose files with **Browse files** or drag files onto the drop area. On Linux,
-choose an output folder from the format panel. Android saves converted files in
-the app's documents folder. Appearance settings include dark, light, system,
-custom accent colors, and English, Czech, German, French, Spanish, Italian,
-Polish, Dutch, and Portuguese languages. The language can follow the system
-setting or be chosen explicitly. Linux has File, Settings, and Help menus;
-Android keeps the settings button in the app bar.
+Choose files with **Browse files** or drop files onto the compact area above the
+queue. Choose output format and conversion settings from the bottom summary.
+Linux can save to a selected folder or beside each original file. Android saves
+converted files in the app's documents folder. Appearance settings include
+dark, light, system, custom accent colors, and English, Czech, German, French,
+Spanish, Italian, Polish, Dutch, and Portuguese languages. The language can
+follow the system setting or be chosen explicitly. Settings and Help are
+available from the gear button in the app bar on both Linux and Android.
+The Linux window uses a compact GTK titlebar.
 
 ## Build
 

@@ -25,7 +25,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get quit => 'Afsluiten';
 
   @override
-  String get heroTitle => 'Elk formaat eenvoudig geregeld.';
+  String get heroTitle => 'Sleep bestanden hierheen om ze te converteren';
 
   @override
   String get heroSubtitle =>
@@ -38,6 +38,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dropHover => 'Laat bestanden los om ze toe te voegen';
 
   @override
+  String get dropMoreFiles => 'Sleep hier meer bestanden heen of blader';
+
+  @override
   String get mediaKinds => 'Video · audio · afbeeldingen';
 
   @override
@@ -48,6 +51,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get saveTo => 'OPSLAAN IN';
+
+  @override
+  String get saveSettings => 'Opslaginstellingen';
+
+  @override
+  String get saveNextToOriginal => 'Opslaan naast het origineel';
+
+  @override
+  String get saveNextToOriginalAndroidUnavailable =>
+      'Android beperkt toegang tot de oorspronkelijke map. Bestanden worden opgeslagen in de app-opslag.';
 
   @override
   String get loadingFolder => 'Map laden…';
@@ -101,6 +114,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get cancel => 'Conversie annuleren';
+
+  @override
+  String get closeDialog => 'Sluiten';
 
   @override
   String get removeFile => 'Bestand verwijderen';

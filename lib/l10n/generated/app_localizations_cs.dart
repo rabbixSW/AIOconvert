@@ -25,7 +25,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get quit => 'Ukončit';
 
   @override
-  String get heroTitle => 'Každý formát vám bude vyhovovat.';
+  String get heroTitle => 'Přetáhněte soubory sem a převeďte je';
 
   @override
   String get heroSubtitle =>
@@ -38,6 +38,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dropHover => 'Pusťte soubory a přidejte je';
 
   @override
+  String get dropMoreFiles => 'Přetáhněte další soubory nebo je vyberte';
+
+  @override
   String get mediaKinds => 'Video · zvuk · obrázky';
 
   @override
@@ -48,6 +51,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get saveTo => 'ULOŽIT DO';
+
+  @override
+  String get saveSettings => 'Nastavení ukládání';
+
+  @override
+  String get saveNextToOriginal => 'Uložit vedle originálu';
+
+  @override
+  String get saveNextToOriginalAndroidUnavailable =>
+      'Android omezuje přístup k původní složce. Soubory se ukládají do úložiště aplikace.';
 
   @override
   String get loadingFolder => 'Načítání složky…';
@@ -101,6 +114,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get cancel => 'Zrušit převod';
+
+  @override
+  String get closeDialog => 'Zavřít';
 
   @override
   String get removeFile => 'Odebrat soubor';
