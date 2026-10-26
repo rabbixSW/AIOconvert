@@ -30,12 +30,14 @@ class _ConverterPageState extends State<ConverterPage> {
   bool _isHovering = false;
   bool _isConverting = false;
   bool _cancelRequested = false;
-  Process? _activeLinuxProcess;
+  Process? _activeFfmpegProcess;
   String? _outputDirectory;
   String? _allFormatExtension;
   bool _saveNextToOriginal = false;
 
   bool get _hasMixedKinds => _jobs.map((job) => job.kind).toSet().length > 1;
+  bool get _usesSystemFfmpeg => Platform.isLinux || Platform.isWindows;
+  bool get _isDesktop => Platform.isLinux || Platform.isWindows;
   bool get _canConvert =>
       _jobs.isNotEmpty &&
       !_isConverting &&
@@ -243,8 +245,9 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Future<_MediaInspection> _inspectMedia(String path) async {
-    if (Platform.isLinux) {
-      final result = await Process.run('ffprobe', [
+    if (_usesSystemFfmpeg) {
+      final ffprobe = _mediaToolExecutable('ffprobe');
+      final result = await Process.run(ffprobe, [
         '-v',
         'error',
         '-show_entries',
@@ -255,7 +258,7 @@ class _ConverterPageState extends State<ConverterPage> {
       ]);
       if (result.exitCode != 0) {
         throw ProcessException(
-          'ffprobe',
+          ffprobe,
           [path],
           result.stderr.toString().trim(),
           result.exitCode,
@@ -307,6 +310,17 @@ class _ConverterPageState extends State<ConverterPage> {
     final uri = Uri.tryParse(path);
     if (uri != null && uri.scheme == 'file') return uri.toFilePath();
     return path;
+  }
+
+  String _mediaToolExecutable(String tool) {
+    if (!Platform.isWindows) return tool;
+    final bundledExecutable = p.join(
+      p.dirname(Platform.resolvedExecutable),
+      '$tool.exe',
+    );
+    return File(bundledExecutable).existsSync()
+        ? bundledExecutable
+        : '$tool.exe';
   }
 
   void _setAllFormat(String? extension) {
@@ -427,7 +441,7 @@ class _ConverterPageState extends State<ConverterPage> {
         outputPath: outputPath,
         format: job.outputFormat!,
       );
-      if (Platform.isLinux) {
+      if (_usesSystemFfmpeg) {
         await _convertWithSystemFfmpeg(job, arguments, outputPath);
         return;
       }
@@ -491,8 +505,9 @@ class _ConverterPageState extends State<ConverterPage> {
     String outputPath,
   ) async {
     final noOutputMessage = AppLocalizations.of(context)!.ffmpegNoOutput;
-    final process = await Process.start('ffmpeg', arguments);
-    _activeLinuxProcess = process;
+    final ffmpeg = _mediaToolExecutable('ffmpeg');
+    final process = await Process.start(ffmpeg, arguments);
+    _activeFfmpegProcess = process;
     final stderr = StringBuffer();
     var lastProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
     final stderrDone = process.stderr
@@ -523,7 +538,7 @@ class _ConverterPageState extends State<ConverterPage> {
     final stdoutDone = process.stdout.drain<void>();
     final exitCode = await process.exitCode;
     await Future.wait([stderrDone, stdoutDone]);
-    _activeLinuxProcess = null;
+    _activeFfmpegProcess = null;
 
     if (exitCode != 0) {
       final reason = stderr
@@ -533,7 +548,7 @@ class _ConverterPageState extends State<ConverterPage> {
           .where((line) => line.isNotEmpty)
           .lastOrNull;
       throw ProcessException(
-        'ffmpeg',
+        ffmpeg,
         arguments,
         reason ?? 'FFmpeg exited with code $exitCode.',
         exitCode,
@@ -552,8 +567,10 @@ class _ConverterPageState extends State<ConverterPage> {
 
   Future<void> _cancelConversion() async {
     _cancelRequested = true;
-    if (Platform.isLinux) {
-      _activeLinuxProcess?.kill(ProcessSignal.sigint);
+    if (_usesSystemFfmpeg) {
+      _activeFfmpegProcess?.kill(
+        Platform.isWindows ? ProcessSignal.sigterm : ProcessSignal.sigint,
+      );
     } else {
       await FFmpegKit.cancel();
     }
@@ -589,7 +606,7 @@ class _ConverterPageState extends State<ConverterPage> {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: Platform.isLinux
+      appBar: _isDesktop
           ? null
           : AppBar(
               titleSpacing: 24,
@@ -645,7 +662,7 @@ class _ConverterPageState extends State<ConverterPage> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
                       children: [
-                        if (Platform.isLinux)
+                        if (_isDesktop)
                           Align(
                             alignment: Alignment.centerRight,
                             child: Row(

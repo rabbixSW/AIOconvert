@@ -1,11 +1,11 @@
 # AIOconvert
 
-A local-first Flutter multimedia converter for Linux and Android. Files are
-probed with FFprobe, and the format menu for each item is limited to formats
-appropriate for its detected media type. Mixed video, audio, and image queues
-require a format selection on every file before conversion. GIF files with
-video streams are treated as video, allowing conversion to MP4 and other video
-formats.
+A local-first Flutter multimedia converter for Linux, Android, and Windows.
+Files are probed with FFprobe, and the format menu for each item is limited to
+formats appropriate for its detected media type. Mixed video, audio, and image
+queues require a format selection on every file before conversion. GIF files
+with video streams are treated as video, allowing conversion to MP4 and other
+video formats.
 
 ## Run
 
@@ -15,6 +15,7 @@ Requires Flutter 3.47.7 / Dart 3.13.5 or newer.
 flutter pub get
 flutter run -d linux
 flutter run -d <android-device-id>
+flutter run -d windows
 ```
 
 Choose files with **Browse files** or drop files onto the compact area above the
@@ -24,18 +25,22 @@ converted files in the app's documents folder. Appearance settings include
 dark, light, system, custom accent colors, and English, Czech, German, French,
 Spanish, Italian, Polish, Dutch, and Portuguese languages. The language can
 follow the system setting or be chosen explicitly. Settings and Help are
-available from the gear button in the app bar on both Linux and Android.
-The Linux window uses a compact GTK titlebar.
+available from the gear button in the app bar on Android and in the page header
+on Linux and Windows. Linux uses native window decorations.
 
 ## Build
 
 ```sh
 flutter build linux
 flutter build apk
+flutter build windows
 ```
 
 Linux uses the system `ffmpeg` and `ffprobe` executables, which must be
 installed and available on `PATH`. Android uses `ffmpeg_kit_flutter_new`.
+Windows uses the bundled FFmpeg and FFprobe executables in the portable
+package; when running from source, install those executables on `PATH`.
+The Windows FFmpeg Essentials binaries from gyan.dev are static GPLv3 builds.
 Review the package and codec licenses before distributing the application.
 The Linux bundle includes a desktop entry and a hicolor app icon. To make the
 icon available to a Wayland desktop, install the matching desktop entry and
@@ -82,3 +87,17 @@ are written as `dist/AIOconvert-<version>-<abi>-release.apk`; the script uses
 the same signing key for future updates, so back it up securely. The Android
 Gradle wrapper is pinned to the version required by the configured Android
 Gradle plugin.
+
+## Windows portable package
+
+Build the Windows portable ZIP from PowerShell on a Windows machine with
+Flutter desktop support and the Visual Studio C++ desktop workload installed:
+
+```powershell
+.\scripts\build-windows-portable.ps1
+```
+
+The script downloads the FFmpeg Essentials ZIP from gyan.dev, verifies its
+published SHA-256 checksum, builds the Windows app, and bundles `ffmpeg.exe`
+and `ffprobe.exe` beside `AIOconvert.exe`. The portable ZIP is written to
+`dist\`. Use `-Mode debug` to create a debug build for local testing.
