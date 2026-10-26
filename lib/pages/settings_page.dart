@@ -211,7 +211,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: localeCode,
-                  decoration: InputDecoration(labelText: strings.language),
+                  decoration: const InputDecoration(),
                   items: [
                     DropdownMenuItem(
                       value: 'system',

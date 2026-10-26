@@ -13,16 +13,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settings => 'Instellingen';
 
   @override
-  String get fileMenu => 'Bestand';
-
-  @override
   String get helpMenu => 'Help';
 
   @override
   String get about => 'Over AIOconvert';
-
-  @override
-  String get quit => 'Afsluiten';
 
   @override
   String get heroTitle => 'Sleep bestanden hierheen om ze te converteren';
@@ -41,19 +35,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dropMoreFiles => 'Sleep hier meer bestanden heen of blader';
 
   @override
-  String get mediaKinds => 'Video · audio · afbeeldingen';
+  String get mediaKinds => 'Video · Audio · Afbeeldingen';
 
   @override
   String get browseFiles => 'Bestanden zoeken';
 
   @override
-  String get formatAll => 'FORMAAT VOOR ALLES';
-
-  @override
   String get saveTo => 'OPSLAAN IN';
 
   @override
-  String get saveSettings => 'Opslaginstellingen';
+  String get saveFolderSelection => 'Opslagmap selecteren';
 
   @override
   String get saveNextToOriginal => 'Opslaan naast het origineel';
@@ -102,9 +93,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get image => 'AFBEELDING';
-
-  @override
-  String get converting => 'Converteren…';
 
   @override
   String get convertAll => 'Alles converteren';
@@ -210,9 +198,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get unsupportedFile =>
       'Het bestand bevat geen ondersteunde audio-, video- of afbeeldingsstream.';
-
-  @override
-  String get probeFailed => 'FFprobe kan dit mediabestand niet lezen.';
 
   @override
   String get outputFolderNotReady => 'De uitvoermap is nog niet klaar.';

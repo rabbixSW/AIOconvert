@@ -118,12 +118,6 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
-  /// No description provided for @fileMenu.
-  ///
-  /// In en, this message translates to:
-  /// **'File'**
-  String get fileMenu;
-
   /// No description provided for @helpMenu.
   ///
   /// In en, this message translates to:
@@ -135,12 +129,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About AIOconvert'**
   String get about;
-
-  /// No description provided for @quit.
-  ///
-  /// In en, this message translates to:
-  /// **'Quit'**
-  String get quit;
 
   /// No description provided for @heroTitle.
   ///
@@ -175,7 +163,7 @@ abstract class AppLocalizations {
   /// No description provided for @mediaKinds.
   ///
   /// In en, this message translates to:
-  /// **'Video · audio · images'**
+  /// **'Video · Audio · Images'**
   String get mediaKinds;
 
   /// No description provided for @browseFiles.
@@ -184,23 +172,17 @@ abstract class AppLocalizations {
   /// **'Browse files'**
   String get browseFiles;
 
-  /// No description provided for @formatAll.
-  ///
-  /// In en, this message translates to:
-  /// **'FORMAT ALL'**
-  String get formatAll;
-
   /// No description provided for @saveTo.
   ///
   /// In en, this message translates to:
   /// **'SAVE TO'**
   String get saveTo;
 
-  /// No description provided for @saveSettings.
+  /// No description provided for @saveFolderSelection.
   ///
   /// In en, this message translates to:
-  /// **'Save settings'**
-  String get saveSettings;
+  /// **'Save folder selection'**
+  String get saveFolderSelection;
 
   /// No description provided for @saveNextToOriginal.
   ///
@@ -291,12 +273,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'IMAGE'**
   String get image;
-
-  /// No description provided for @converting.
-  ///
-  /// In en, this message translates to:
-  /// **'Converting…'**
-  String get converting;
 
   /// No description provided for @convertAll.
   ///
@@ -489,12 +465,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The selected file does not contain a supported audio, video, or image stream.'**
   String get unsupportedFile;
-
-  /// No description provided for @probeFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'FFprobe could not read this media file.'**
-  String get probeFailed;
 
   /// No description provided for @outputFolderNotReady.
   ///

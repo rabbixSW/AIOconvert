@@ -77,7 +77,7 @@ class _ConverterPageState extends State<ConverterPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(strings.saveSettings),
+          title: Text(strings.saveFolderSelection),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,13 +86,16 @@ class _ConverterPageState extends State<ConverterPage> {
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: saveNextToOriginal,
-                  title: Text(strings.saveNextToOriginal),
+                  title: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(strings.saveNextToOriginal),
+                  ),
                   onChanged: (value) =>
                       setDialogState(() => saveNextToOriginal = value ?? false),
                 )
               else
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(left: 12, bottom: 12),
                   child: Text(
                     strings.saveNextToOriginalAndroidUnavailable,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -100,7 +103,10 @@ class _ConverterPageState extends State<ConverterPage> {
                 ),
               if (!Platform.isAndroid) ...[
                 const SizedBox(height: 8),
-                Text(strings.saveTo, style: _eyebrowStyle(context)),
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Text(strings.saveTo, style: _eyebrowStyle(context)),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -108,12 +114,15 @@ class _ConverterPageState extends State<ConverterPage> {
                       child: Builder(
                         builder: (context) {
                           final directory = selectedDirectory;
-                          return Text(
-                            directory == null
-                                ? strings.loadingFolder
-                                : p.basename(directory),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Text(
+                              directory == null
+                                  ? strings.loadingFolder
+                                  : p.basename(directory),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         },
                       ),
@@ -136,7 +145,10 @@ class _ConverterPageState extends State<ConverterPage> {
                   ],
                 ),
               ] else
-                Text(strings.appStorage),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(strings.appStorage),
+                ),
             ],
           ),
           actions: [
@@ -561,6 +573,16 @@ class _ConverterPageState extends State<ConverterPage> {
               ),
               actions: [
                 IconButton(
+                  tooltip: strings.saveFolderSelection,
+                  onPressed: _showSaveSettings,
+                  icon: Icon(
+                    Icons.folder_outlined,
+                    color: _saveNextToOriginal
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                ),
+                IconButton(
                   tooltip: strings.settings,
                   onPressed: widget.onOpenSettings,
                   icon: const Icon(Icons.settings_outlined),
@@ -573,72 +595,82 @@ class _ConverterPageState extends State<ConverterPage> {
           Expanded(
             child: SafeArea(
               top: false,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1040),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-                          children: [
-                            if (Platform.isLinux)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: IconButton(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+                      children: [
+                        if (Platform.isLinux)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: strings.saveFolderSelection,
+                                  onPressed: _showSaveSettings,
+                                  icon: Icon(
+                                    Icons.folder_outlined,
+                                    color: _saveNextToOriginal
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                  ),
+                                ),
+                                IconButton(
                                   tooltip: strings.settings,
                                   onPressed: widget.onOpenSettings,
                                   icon: const Icon(Icons.settings_outlined),
                                 ),
+                              ],
+                            ),
+                          ),
+                        Text(
+                          strings.heroTitle,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.8,
                               ),
-                            Text(
-                              strings.heroTitle,
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.8,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              strings.heroSubtitle,
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(color: colors.onSurfaceVariant),
-                            ),
-                            const SizedBox(height: 20),
-                            _DropZone(
-                              hovering: _isHovering,
-                              compact: _jobs.isNotEmpty,
-                              onDragEntered: () =>
-                                  setState(() => _isHovering = true),
-                              onDragExited: () =>
-                                  setState(() => _isHovering = false),
-                              onFilesDropped: _addDroppedFiles,
-                              onPickFiles: _pickFiles,
-                            ),
-                            const SizedBox(height: 18),
-                            _buildJobsHeader(context),
-                            const SizedBox(height: 12),
-                            if (_jobs.isEmpty)
-                              _buildEmptyState(context)
-                            else
-                              ..._jobs.map(
-                                (job) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _buildJobCard(context, job),
-                                ),
-                              ),
-                            if (_jobs.isEmpty) ...[
-                              const SizedBox(height: 14),
-                              _buildFooter(context),
-                            ],
-                          ],
                         ),
-                      ),
-                      _buildOutputPanel(context),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          strings.heroSubtitle,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: colors.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 20),
+                        _DropZone(
+                          hovering: _isHovering,
+                          compact: _jobs.isNotEmpty,
+                          onDragEntered: () =>
+                              setState(() => _isHovering = true),
+                          onDragExited: () =>
+                              setState(() => _isHovering = false),
+                          onFilesDropped: _addDroppedFiles,
+                          onPickFiles: _pickFiles,
+                        ),
+                        const SizedBox(height: 18),
+                        _buildJobsHeader(context),
+                        const SizedBox(height: 12),
+                        if (_jobs.isEmpty)
+                          _buildEmptyState(context)
+                        else
+                          ..._jobs.map(
+                            (job) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _buildJobCard(context, job),
+                            ),
+                          ),
+                        if (_jobs.isEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildFooter(context),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
+                  _buildOutputPanel(context),
+                ],
               ),
             ),
           ),
@@ -674,7 +706,7 @@ class _ConverterPageState extends State<ConverterPage> {
                     ? strings.setEachFile
                     : strings.chooseFormat,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: 22,
                   vertical: 13,
                 ),
               ),
@@ -682,24 +714,33 @@ class _ConverterPageState extends State<ConverterPage> {
                   .map(
                     (format) => DropdownMenuItem(
                       value: format.extension,
-                      child: Text(
-                        format.label,
-                        overflow: TextOverflow.ellipsis,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          format.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   )
                   .toList(),
               onChanged: commonKind == null ? null : _setAllFormat,
             );
-            final saveButton = IconButton(
-              tooltip: strings.saveSettings,
-              onPressed: _showSaveSettings,
-              icon: Icon(
-                Icons.folder_outlined,
-                color: _saveNextToOriginal
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
-              ),
+            final formatControl = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                formatDropdown,
+                if (_hasMixedKinds)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      strings.mixedMediaWarning,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
             );
             final convertButton = FilledButton.icon(
               onPressed: _isConverting
@@ -716,36 +757,7 @@ class _ConverterPageState extends State<ConverterPage> {
                 ? Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  strings.formatAll,
-                                  style: _eyebrowStyle(context),
-                                ),
-                                const SizedBox(height: 4),
-                                formatDropdown,
-                                if (_hasMixedKinds)
-                                  Text(
-                                    strings.mixedMediaWarning,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          saveButton,
-                        ],
-                      ),
+                      Row(children: [Expanded(child: formatControl)]),
                       const SizedBox(height: 8),
                       SizedBox(width: double.infinity, child: convertButton),
                     ],
@@ -753,31 +765,8 @@ class _ConverterPageState extends State<ConverterPage> {
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              strings.formatAll,
-                              style: _eyebrowStyle(context),
-                            ),
-                            const SizedBox(height: 4),
-                            formatDropdown,
-                            if (_hasMixedKinds)
-                              Text(
-                                strings.mixedMediaWarning,
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      saveButton,
-                      const SizedBox(width: 8),
+                      Expanded(child: formatControl),
+                      const SizedBox(width: 12),
                       convertButton,
                     ],
                   );
@@ -865,15 +854,22 @@ class _ConverterPageState extends State<ConverterPage> {
     final narrow = MediaQuery.sizeOf(context).width < 600;
     final formatDropdown = DropdownButton<String>(
       value: job.outputFormat?.extension,
-      hint: Text(strings.chooseFormat),
+      hint: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Text(strings.chooseFormat),
+      ),
       isExpanded: true,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       underline: const SizedBox.shrink(),
       borderRadius: BorderRadius.circular(14),
       items: mediaFormats[job.kind]!
           .map(
             (format) => DropdownMenuItem(
               value: format.extension,
-              child: Text(format.label, overflow: TextOverflow.ellipsis),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(format.label, overflow: TextOverflow.ellipsis),
+              ),
             ),
           )
           .toList(),

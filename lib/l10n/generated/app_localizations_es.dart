@@ -13,16 +13,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settings => 'Ajustes';
 
   @override
-  String get fileMenu => 'Archivo';
-
-  @override
   String get helpMenu => 'Ayuda';
 
   @override
   String get about => 'Acerca de AIOconvert';
-
-  @override
-  String get quit => 'Salir';
 
   @override
   String get heroTitle => 'Arrastra y suelta archivos para convertirlos';
@@ -41,19 +35,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dropMoreFiles => 'Suelta más archivos aquí o selecciónalos';
 
   @override
-  String get mediaKinds => 'Vídeo · audio · imágenes';
+  String get mediaKinds => 'Vídeo · Audio · Imágenes';
 
   @override
   String get browseFiles => 'Buscar archivos';
 
   @override
-  String get formatAll => 'FORMATO PARA TODOS';
-
-  @override
   String get saveTo => 'GUARDAR EN';
 
   @override
-  String get saveSettings => 'Ajustes de guardado';
+  String get saveFolderSelection => 'Seleccionar carpeta de destino';
 
   @override
   String get saveNextToOriginal => 'Guardar junto al original';
@@ -102,9 +93,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get image => 'IMAGEN';
-
-  @override
-  String get converting => 'Convirtiendo…';
 
   @override
   String get convertAll => 'Convertir todo';
@@ -211,10 +199,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get unsupportedFile =>
       'El archivo no contiene una pista de audio, vídeo o imagen compatible.';
-
-  @override
-  String get probeFailed =>
-      'FFprobe no ha podido leer este archivo multimedia.';
 
   @override
   String get outputFolderNotReady => 'La carpeta de destino aún no está lista.';

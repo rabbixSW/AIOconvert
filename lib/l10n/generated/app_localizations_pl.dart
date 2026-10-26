@@ -13,16 +13,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settings => 'Ustawienia';
 
   @override
-  String get fileMenu => 'Plik';
-
-  @override
   String get helpMenu => 'Pomoc';
 
   @override
   String get about => 'O AIOconvert';
-
-  @override
-  String get quit => 'Zamknij';
 
   @override
   String get heroTitle => 'Przeciągnij pliki tutaj, aby je przekonwertować';
@@ -41,19 +35,16 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dropMoreFiles => 'Upuść tutaj kolejne pliki lub wybierz je';
 
   @override
-  String get mediaKinds => 'Wideo · audio · obrazy';
+  String get mediaKinds => 'Wideo · Audio · Obrazy';
 
   @override
   String get browseFiles => 'Przeglądaj pliki';
 
   @override
-  String get formatAll => 'FORMAT DLA WSZYSTKICH';
-
-  @override
   String get saveTo => 'ZAPISZ W';
 
   @override
-  String get saveSettings => 'Ustawienia zapisu';
+  String get saveFolderSelection => 'Wybierz folder zapisu';
 
   @override
   String get saveNextToOriginal => 'Zapisz obok oryginału';
@@ -102,9 +93,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get image => 'OBRAZ';
-
-  @override
-  String get converting => 'Konwertowanie…';
 
   @override
   String get convertAll => 'Konwertuj wszystko';
@@ -210,10 +198,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get unsupportedFile =>
       'Plik nie zawiera obsługiwanego strumienia audio, wideo ani obrazu.';
-
-  @override
-  String get probeFailed =>
-      'FFprobe nie może odczytać tego pliku multimedialnego.';
 
   @override
   String get outputFolderNotReady => 'Folder docelowy nie jest jeszcze gotowy.';

@@ -36,11 +36,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Drag and drop files to convert them'), findsOneWidget);
-    expect(find.byTooltip('Save settings'), findsOneWidget);
+    expect(find.byTooltip('Save folder selection'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Save settings'));
+    await tester.tap(find.byTooltip('Save folder selection'));
     await tester.pumpAndSettle();
-    expect(find.text('Save settings'), findsOneWidget);
+    expect(find.text('Save folder selection'), findsOneWidget);
     expect(find.text('Save next to original'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -67,7 +67,7 @@ void main() {
 
       expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Accent color'), findsOneWidget);
-      expect(find.text('Language'), findsNWidgets(2));
+      expect(find.text('Language'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byType(DropdownButtonFormField<String>));

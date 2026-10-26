@@ -13,16 +13,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
-  String get fileMenu => 'File';
-
-  @override
   String get helpMenu => 'Help';
 
   @override
   String get about => 'About AIOconvert';
-
-  @override
-  String get quit => 'Quit';
 
   @override
   String get heroTitle => 'Drag and drop files to convert them';
@@ -41,19 +35,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dropMoreFiles => 'Drop more files here, or browse';
 
   @override
-  String get mediaKinds => 'Video · audio · images';
+  String get mediaKinds => 'Video · Audio · Images';
 
   @override
   String get browseFiles => 'Browse files';
 
   @override
-  String get formatAll => 'FORMAT ALL';
-
-  @override
   String get saveTo => 'SAVE TO';
 
   @override
-  String get saveSettings => 'Save settings';
+  String get saveFolderSelection => 'Save folder selection';
 
   @override
   String get saveNextToOriginal => 'Save next to original';
@@ -102,9 +93,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get image => 'IMAGE';
-
-  @override
-  String get converting => 'Converting…';
 
   @override
   String get convertAll => 'Convert all';
@@ -209,9 +197,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get unsupportedFile =>
       'The selected file does not contain a supported audio, video, or image stream.';
-
-  @override
-  String get probeFailed => 'FFprobe could not read this media file.';
 
   @override
   String get outputFolderNotReady => 'The output folder is not ready yet.';

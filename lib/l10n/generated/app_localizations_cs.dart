@@ -13,16 +13,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settings => 'Nastavení';
 
   @override
-  String get fileMenu => 'Soubor';
-
-  @override
   String get helpMenu => 'Nápověda';
 
   @override
   String get about => 'O aplikaci AIOconvert';
-
-  @override
-  String get quit => 'Ukončit';
 
   @override
   String get heroTitle => 'Přetáhněte soubory sem a převeďte je';
@@ -41,19 +35,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dropMoreFiles => 'Přetáhněte další soubory nebo je vyberte';
 
   @override
-  String get mediaKinds => 'Video · zvuk · obrázky';
+  String get mediaKinds => 'Video · Zvuk · Obrázky';
 
   @override
   String get browseFiles => 'Procházet soubory';
 
   @override
-  String get formatAll => 'FORMÁT PRO VŠECHNY';
-
-  @override
   String get saveTo => 'ULOŽIT DO';
 
   @override
-  String get saveSettings => 'Nastavení ukládání';
+  String get saveFolderSelection => 'Vybrat složku pro uložení';
 
   @override
   String get saveNextToOriginal => 'Uložit vedle originálu';
@@ -102,9 +93,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get image => 'OBRÁZEK';
-
-  @override
-  String get converting => 'Převádění…';
 
   @override
   String get convertAll => 'Převést vše';
@@ -211,9 +199,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get unsupportedFile =>
       'Vybraný soubor neobsahuje podporovaný zvukový, video ani obrazový stream.';
-
-  @override
-  String get probeFailed => 'FFprobe nedokázal přečíst tento mediální soubor.';
 
   @override
   String get outputFolderNotReady => 'Výstupní složka ještě není připravena.';
