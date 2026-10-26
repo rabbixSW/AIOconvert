@@ -1,0 +1,100 @@
+{
+  "@@locale": "en",
+  "settings": "Settings",
+  "fileMenu": "File",
+  "helpMenu": "Help",
+  "about": "About AIOconvert",
+  "quit": "Quit",
+  "heroTitle": "Make every format work for you.",
+  "heroSubtitle": "Convert videos, audio and images privately on your device.",
+  "dropPrompt": "Drop your files here",
+  "dropHover": "Drop files to add them",
+  "mediaKinds": "Video · audio · images",
+  "browseFiles": "Browse files",
+  "formatAll": "FORMAT ALL",
+  "saveTo": "SAVE TO",
+  "loadingFolder": "Loading folder…",
+  "appStorage": "App storage",
+  "chooseFormat": "Choose a format",
+  "setEachFile": "Set each file separately",
+  "mixedMediaWarning": "Mixed media detected — choose a compatible output for every file.",
+  "filesTitle": "Your files",
+  "clearQueue": "Clear list",
+  "clear": "Clear",
+  "queueEmpty": "Your conversion queue is empty",
+  "emptySubtitle": "Add a file to see its detected type and compatible formats.",
+  "video": "VIDEO",
+  "audio": "AUDIO",
+  "image": "IMAGE",
+  "converting": "Converting…",
+  "convertAll": "Convert all",
+  "stopConversion": "Stop conversion",
+  "cancel": "Cancel conversion",
+  "removeFile": "Remove file",
+  "convertingProgress": "Converting…",
+  "convertingPercent": "{percent}% · converting",
+  "@convertingPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "savedOutput": "Saved to {name}",
+  "@savedOutput": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "footerAndroid": "Files are processed on your device · outputs are stored in app documents",
+  "footerDesktop": "Files are processed on your device · no uploads",
+  "appearance": "Appearance",
+  "dark": "Dark",
+  "light": "Light",
+  "system": "System",
+  "accentColor": "Accent color",
+  "customHexColor": "Custom hex color",
+  "apply": "Apply",
+  "invalidHexColor": "Enter a valid 6-digit hex color.",
+  "language": "Language",
+  "english": "English",
+  "czech": "Čeština",
+  "german": "Deutsch",
+  "french": "Français",
+  "spanish": "Español",
+  "italian": "Italiano",
+  "polish": "Polski",
+  "dutch": "Nederlands",
+  "portuguese": "Português",
+  "chooseFolder": "Choose an output folder",
+  "dropFoldersUnsupported": "Please drop files, not folders.",
+  "inspectFailed": "Could not inspect \"{name}\": {error}",
+  "@inspectFailed": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "error": {"type": "String"}
+    }
+  },
+  "unsupportedFile": "The selected file does not contain a supported audio, video, or image stream.",
+  "probeFailed": "FFprobe could not read this media file.",
+  "outputFolderNotReady": "The output folder is not ready yet.",
+  "ffmpegNoOutput": "FFmpeg reported success but no output file was created.",
+  "convertStopped": "Conversion stopped. {count} file(s) completed.",
+  "@convertStopped": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "convertPartial": "{completed} completed, {failed} failed. See each file for details.",
+  "@convertPartial": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "convertSuccess": "{count} file(s) converted successfully.",
+  "@convertSuccess": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "aboutVersion": "A local-first multimedia converter powered by FFmpeg."
+}

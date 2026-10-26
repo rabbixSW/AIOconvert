@@ -1,4 +1,4 @@
-package com.aiconvert.aiconvert
+package com.aioconvert.aioconvert
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -7,6 +7,8 @@ require a format selection on every file before conversion.
 
 ## Run
 
+Requires Flutter 3.47.7 / Dart 3.13.5 or newer.
+
 ```sh
 flutter pub get
 flutter run -d linux
@@ -16,7 +18,10 @@ flutter run -d <android-device-id>
 Choose files with **Browse files** or drag files onto the drop area. On Linux,
 choose an output folder from the format panel. Android saves converted files in
 the app's documents folder. Appearance settings include dark, light, system,
-and a custom accent color.
+custom accent colors, and English, Czech, German, French, Spanish, Italian,
+Polish, Dutch, and Portuguese languages. The language can follow the system
+setting or be chosen explicitly. Linux has File, Settings, and Help menus;
+Android keeps the settings button in the app bar.
 
 ## Build
 
