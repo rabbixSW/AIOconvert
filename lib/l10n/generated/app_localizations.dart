@@ -496,6 +496,30 @@ abstract class AppLocalizations {
   /// **'{count} file(s) converted successfully.'**
   String convertSuccess(int count);
 
+  /// No description provided for @gifAudioLossTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio will be lost'**
+  String get gifAudioLossTitle;
+
+  /// No description provided for @gifAudioLossMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'GIF does not support audio. The GIF output will be silent. Continue?'**
+  String get gifAudioLossMessage;
+
+  /// No description provided for @keepVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep video'**
+  String get keepVideo;
+
+  /// No description provided for @convertWithoutAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert without audio'**
+  String get convertWithoutAudio;
+
   /// No description provided for @aboutVersion.
   ///
   /// In en, this message translates to:

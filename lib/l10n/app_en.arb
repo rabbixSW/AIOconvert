@@ -96,5 +96,9 @@
       "count": {"type": "int"}
     }
   },
+  "gifAudioLossTitle": "Audio will be lost",
+  "gifAudioLossMessage": "GIF does not support audio. The GIF output will be silent. Continue?",
+  "keepVideo": "Keep video",
+  "convertWithoutAudio": "Convert without audio",
   "aboutVersion": "A local-first multimedia converter powered by FFmpeg."
 }

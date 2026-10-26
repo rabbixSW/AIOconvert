@@ -80,6 +80,13 @@ const mediaFormats = <MediaKind, List<OutputFormat>>{
       '-b:a',
       '192k',
     ]),
+    OutputFormat('gif', 'GIF', [
+      '-filter_complex',
+      '[0:v]fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
+      '-loop',
+      '0',
+      '-an',
+    ]),
   ],
   MediaKind.audio: [
     OutputFormat('mp3', 'MP3', ['-vn', '-c:a', 'libmp3lame', '-q:a', '2']),
@@ -125,7 +132,12 @@ const mediaFormats = <MediaKind, List<OutputFormat>>{
     ]),
     OutputFormat('bmp', 'BMP', ['-frames:v', '1', '-c:v', 'bmp']),
     OutputFormat('tif', 'TIFF', ['-frames:v', '1', '-c:v', 'tiff']),
-    OutputFormat('gif', 'GIF', ['-vf', 'fps=12,scale=960:-1:flags=lanczos']),
+    OutputFormat('gif', 'GIF', [
+      '-frames:v',
+      '1',
+      '-vf',
+      'scale=960:-1:flags=lanczos',
+    ]),
   ],
 };
 
@@ -137,7 +149,6 @@ const imageExtensions = {
   'cr3',
   'dng',
   'exr',
-  'gif',
   'heic',
   'heif',
   'ico',
@@ -172,14 +183,51 @@ const imageExtensions = {
   'xpm',
 };
 
+const audioExtensions = {
+  'aac',
+  'aif',
+  'aiff',
+  'alac',
+  'amr',
+  'ape',
+  'au',
+  'caf',
+  'flac',
+  'm4a',
+  'm4b',
+  'm4p',
+  'mid',
+  'midi',
+  'mka',
+  'mp2',
+  'mp3',
+  'oga',
+  'ogg',
+  'opus',
+  'ra',
+  'wav',
+  'wma',
+};
+
 MediaKind? classifyMedia({
   required String fileName,
   required Iterable<String> streamTypes,
+  Iterable<int?> streamFrameCounts = const [],
 }) {
   final extension = fileName.split('.').last.toLowerCase();
   if (imageExtensions.contains(extension)) return MediaKind.image;
 
   final types = streamTypes.toSet();
+  if (extension == 'gif') {
+    return streamFrameCounts.any(
+          (frameCount) => frameCount != null && frameCount > 1,
+        )
+        ? MediaKind.video
+        : MediaKind.image;
+  }
+  if (audioExtensions.contains(extension) && types.contains('audio')) {
+    return MediaKind.audio;
+  }
   if (types.contains('video')) return MediaKind.video;
   if (types.contains('audio')) return MediaKind.audio;
   return null;

@@ -64,5 +64,9 @@
   "inspectFailed": "Kan “{name}” niet lezen: {error}",
   "convertStopped": "Conversie gestopt. {count} bestand(en) voltooid.",
   "convertPartial": "{completed} voltooid, {failed} mislukt. Bekijk de details per bestand.",
-  "convertSuccess": "{count} bestand(en) geconverteerd."
+  "convertSuccess": "{count} bestand(en) geconverteerd.",
+  "gifAudioLossTitle": "Audio gaat verloren",
+  "gifAudioLossMessage": "GIF ondersteunt geen audio. De GIF wordt stil. Doorgaan?",
+  "keepVideo": "Video behouden",
+  "convertWithoutAudio": "Converteren zonder audio"
 }

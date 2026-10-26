@@ -64,5 +64,9 @@
   "inspectFailed": "Não foi possível ler “{name}”: {error}",
   "convertStopped": "Conversão parada. {count} ficheiro(s) concluído(s).",
   "convertPartial": "{completed} concluídos, {failed} falharam. Consulte os detalhes de cada ficheiro.",
-  "convertSuccess": "{count} ficheiro(s) convertido(s) com sucesso."
+  "convertSuccess": "{count} ficheiro(s) convertido(s) com sucesso.",
+  "gifAudioLossTitle": "O áudio será perdido",
+  "gifAudioLossMessage": "GIF não suporta áudio. O GIF resultante ficará sem som. Continuar?",
+  "keepVideo": "Manter vídeo",
+  "convertWithoutAudio": "Converter sem áudio"
 }

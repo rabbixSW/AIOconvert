@@ -216,6 +216,7 @@ class _ConverterPageState extends State<ConverterPage> {
       final kind = classifyMedia(
         fileName: name,
         streamTypes: inspection.streamTypes,
+        streamFrameCounts: inspection.streamFrameCounts,
       );
       if (kind == null) {
         throw FormatException(strings.unsupportedFile);
@@ -226,6 +227,7 @@ class _ConverterPageState extends State<ConverterPage> {
         path: path,
         name: name,
         kind: kind,
+        hasAudio: inspection.streamTypes.contains('audio'),
         sourceFormat: p.extension(name).replaceFirst('.', '').toUpperCase(),
         fileSize: fileSize ?? inspection.fileSize,
         duration: inspection.duration,
@@ -246,7 +248,7 @@ class _ConverterPageState extends State<ConverterPage> {
         '-v',
         'error',
         '-show_entries',
-        'format=duration,size:stream=codec_type',
+        'format=duration,size:stream=codec_type,nb_frames',
         '-of',
         'json',
         path,
@@ -264,9 +266,16 @@ class _ConverterPageState extends State<ConverterPage> {
       final format = data['format'] as Map<String, dynamic>? ?? {};
       final streams = data['streams'] as List<dynamic>? ?? [];
       return _MediaInspection(
-        streamTypes: streams.whereType<Map<String, dynamic>>().map(
-          (stream) => stream['codec_type'] as String? ?? '',
-        ),
+        streamTypes: streams
+            .whereType<Map<String, dynamic>>()
+            .map((stream) => stream['codec_type'] as String? ?? '')
+            .toList(),
+        streamFrameCounts: streams
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (stream) => int.tryParse(stream['nb_frames']?.toString() ?? ''),
+            )
+            .toList(),
         duration: double.tryParse(format['duration'] as String? ?? ''),
         fileSize: int.tryParse(format['size'] as String? ?? ''),
       );
@@ -278,9 +287,17 @@ class _ConverterPageState extends State<ConverterPage> {
       throw const FormatException('FFprobe could not read this media file.');
     }
     return _MediaInspection(
-      streamTypes: information.getStreams().map(
-        (stream) => stream.getType() ?? '',
-      ),
+      streamTypes: information
+          .getStreams()
+          .map((stream) => stream.getType() ?? '')
+          .toList(),
+      streamFrameCounts: information
+          .getStreams()
+          .map(
+            (stream) =>
+                int.tryParse(stream.getProperty('nb_frames')?.toString() ?? ''),
+          )
+          .toList(),
       duration: double.tryParse(information.getDuration() ?? ''),
       fileSize: int.tryParse(information.getSize() ?? ''),
     );
@@ -344,6 +361,33 @@ class _ConverterPageState extends State<ConverterPage> {
 
   Future<void> _convertAll() async {
     if (!_canConvert) return;
+    final gifJobsWithAudio = _jobs.where(
+      (job) =>
+          job.state != JobState.complete &&
+          job.outputFormat?.extension == 'gif' &&
+          job.hasAudio,
+    );
+    if (gifJobsWithAudio.isNotEmpty) {
+      final strings = AppLocalizations.of(context)!;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(strings.gifAudioLossTitle),
+          content: Text(strings.gifAudioLossMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(strings.keepVideo),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(strings.convertWithoutAudio),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
     setState(() {
       _isConverting = true;
       _cancelRequested = false;
@@ -1071,11 +1115,13 @@ class _ConverterPageState extends State<ConverterPage> {
 class _MediaInspection {
   const _MediaInspection({
     required this.streamTypes,
+    required this.streamFrameCounts,
     required this.duration,
     required this.fileSize,
   });
 
   final Iterable<String> streamTypes;
+  final Iterable<int?> streamFrameCounts;
   final double? duration;
   final int? fileSize;
 }

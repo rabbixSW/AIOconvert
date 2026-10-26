@@ -224,6 +224,19 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get gifAudioLossTitle => 'L’audio verrà perso';
+
+  @override
+  String get gifAudioLossMessage =>
+      'Il formato GIF non supporta l’audio. Il GIF sarà muto. Continuare?';
+
+  @override
+  String get keepVideo => 'Mantieni il video';
+
+  @override
+  String get convertWithoutAudio => 'Converti senza audio';
+
+  @override
   String get aboutVersion =>
       'Un convertitore multimediale locale basato su FFmpeg.';
 }

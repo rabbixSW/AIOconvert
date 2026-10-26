@@ -223,5 +223,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get gifAudioLossTitle => 'Zvuk se ztratí';
+
+  @override
+  String get gifAudioLossMessage =>
+      'Formát GIF nepodporuje zvuk. Výsledný GIF bude němý. Pokračovat?';
+
+  @override
+  String get keepVideo => 'Ponechat video';
+
+  @override
+  String get convertWithoutAudio => 'Převést bez zvuku';
+
+  @override
   String get aboutVersion => 'Offline převodník multimédií využívající FFmpeg.';
 }

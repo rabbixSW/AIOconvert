@@ -65,4 +65,8 @@
   ,"convertStopped": "Převod zastaven. Dokončeno souborů: {count}."
   ,"convertPartial": "Dokončeno: {completed}, selhalo: {failed}. Podrobnosti jsou u jednotlivých souborů."
   ,"convertSuccess": "Úspěšně převedeno souborů: {count}."
+  ,"gifAudioLossTitle": "Zvuk se ztratí"
+  ,"gifAudioLossMessage": "Formát GIF nepodporuje zvuk. Výsledný GIF bude němý. Pokračovat?"
+  ,"keepVideo": "Ponechat video"
+  ,"convertWithoutAudio": "Převést bez zvuku"
 }

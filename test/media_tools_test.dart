@@ -14,9 +14,38 @@ void main() {
       );
     });
 
+    test('distinguishes static and animated GIFs', () {
+      expect(
+        classifyMedia(
+          fileName: 'static.gif',
+          streamTypes: ['video'],
+          streamFrameCounts: [1],
+        ),
+        MediaKind.image,
+      );
+      expect(
+        classifyMedia(
+          fileName: 'animation.gif',
+          streamTypes: ['video'],
+          streamFrameCounts: [2],
+        ),
+        MediaKind.video,
+      );
+      expect(
+        mediaFormats[MediaKind.image]!.map((format) => format.extension),
+        contains('png'),
+      );
+      expect(formatFor(MediaKind.video, 'mp4'), isNotNull);
+      expect(formatFor(MediaKind.video, 'gif'), isNotNull);
+    });
+
     test('recognizes audio and video from probed streams', () {
       expect(
         classifyMedia(fileName: 'track.unknown', streamTypes: ['audio']),
+        MediaKind.audio,
+      );
+      expect(
+        classifyMedia(fileName: 'track.mp3', streamTypes: ['audio', 'video']),
         MediaKind.audio,
       );
       expect(
@@ -62,5 +91,32 @@ void main() {
     expect(arguments, contains('/output/my file_converted.webm'));
     expect(arguments.first, '-y');
     expect(arguments, contains('libvpx-vp9'));
+  });
+
+  test('video to GIF conversion excludes audio streams', () {
+    final arguments = buildConversionArguments(
+      inputPath: '/media/clip.mp4',
+      outputPath: '/output/clip.gif',
+      format: formatFor(MediaKind.video, 'gif')!,
+    );
+
+    expect(arguments, contains('-an'));
+    expect(arguments, contains('-filter_complex'));
+    expect(arguments.last, '/output/clip.gif');
+  });
+
+  test('still image to GIF conversion encodes one scaled frame', () {
+    final arguments = buildConversionArguments(
+      inputPath: '/media/photo.jpg',
+      outputPath: '/output/photo.gif',
+      format: formatFor(MediaKind.image, 'gif')!,
+    );
+
+    expect(arguments, containsAllInOrder(['-frames:v', '1']));
+    expect(
+      arguments,
+      containsAllInOrder(['-vf', 'scale=960:-1:flags=lanczos']),
+    );
+    expect(arguments.last, '/output/photo.gif');
   });
 }

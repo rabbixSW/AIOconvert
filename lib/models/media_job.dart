@@ -8,6 +8,7 @@ class MediaJob {
     required this.path,
     required this.name,
     required this.kind,
+    required this.hasAudio,
     required this.sourceFormat,
     required this.fileSize,
     required this.duration,
@@ -18,6 +19,7 @@ class MediaJob {
   final String path;
   final String name;
   final MediaKind kind;
+  final bool hasAudio;
   final String sourceFormat;
   final int? fileSize;
   final double? duration;

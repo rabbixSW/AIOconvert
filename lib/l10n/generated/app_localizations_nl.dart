@@ -222,6 +222,19 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get gifAudioLossTitle => 'Audio gaat verloren';
+
+  @override
+  String get gifAudioLossMessage =>
+      'GIF ondersteunt geen audio. De GIF wordt stil. Doorgaan?';
+
+  @override
+  String get keepVideo => 'Video behouden';
+
+  @override
+  String get convertWithoutAudio => 'Converteren zonder audio';
+
+  @override
   String get aboutVersion =>
       'Een lokale mediaconverter aangedreven door FFmpeg.';
 }

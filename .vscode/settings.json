@@ -1,5 +1,6 @@
 {
   "cmake.sourceDirectory": "/mnt/Projects/Programming/AIOconvert/linux",
   "java.import.gradle.wrapper.enabled": true,
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "java.compile.nullAnalysis.mode": "automatic"
 }
