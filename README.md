@@ -35,3 +35,8 @@ flutter build apk
 Linux uses the system `ffmpeg` and `ffprobe` executables, which must be
 installed and available on `PATH`. Android uses `ffmpeg_kit_flutter_new`.
 Review the package and codec licenses before distributing the application.
+The Linux bundle includes a desktop entry and a hicolor app icon. To make the
+icon available to a Wayland desktop, install the matching desktop entry and
+icon into standard XDG application and icon-theme directories; the compositor
+uses the desktop entry matching `com.aioconvert.aioconvert` to select the
+running app's icon.

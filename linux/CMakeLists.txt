@@ -89,11 +89,34 @@ install(CODE "
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+set(INSTALL_BUNDLE_APPLICATIONS_DIR "${CMAKE_INSTALL_PREFIX}/share/applications")
+set(INSTALL_BUNDLE_ICONS_DIR
+  "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/512x512/apps")
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/com.aioconvert.aioconvert.desktop.in"
+  "${PROJECT_BINARY_DIR}/com.aioconvert.aioconvert.desktop"
+  @ONLY
+)
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+  COMPONENT Runtime)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/icons/aioconvert.png"
+  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}/icons"
+  RENAME "AIOconvert.png"
+  COMPONENT Runtime)
+
+install(FILES "${PROJECT_BINARY_DIR}/com.aioconvert.aioconvert.desktop"
+  DESTINATION "${INSTALL_BUNDLE_APPLICATIONS_DIR}"
+  COMPONENT Runtime)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/icons/aioconvert.png"
+  DESTINATION "${INSTALL_BUNDLE_ICONS_DIR}"
+  RENAME "com.aioconvert.aioconvert.png"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"

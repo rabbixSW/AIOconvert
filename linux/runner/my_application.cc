@@ -1,6 +1,7 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <glib/gstdio.h>
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication
@@ -25,6 +26,23 @@ static void my_application_activate(GApplication *application)
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
   gtk_window_set_title(window, "AIOconvert");
+  gtk_window_set_icon_name(window, "com.aioconvert.aioconvert");
+
+  g_autofree gchar *executable_path = g_file_read_link("/proc/self/exe", nullptr);
+  if (executable_path != nullptr)
+  {
+    g_autofree gchar *executable_directory =
+        g_path_get_dirname(executable_path);
+    g_autofree gchar *icon_path =
+        g_build_filename(executable_directory, "data", "icons",
+                         "AIOconvert.png", nullptr);
+    g_autoptr(GError) icon_error = nullptr;
+    if (!gtk_window_set_icon_from_file(window, icon_path, &icon_error))
+    {
+      g_warning("Unable to load the AIOconvert window icon: %s",
+                icon_error->message);
+    }
+  }
 
   gtk_window_set_default_size(window, 1280, 720);
 

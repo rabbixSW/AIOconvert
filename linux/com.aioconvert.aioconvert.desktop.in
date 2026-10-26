@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=AIOconvert
+Comment=Convert audio, video, and image files
+Exec=@CMAKE_INSTALL_PREFIX@/AIOconvert
+Icon=com.aioconvert.aioconvert
+Terminal=false
+Categories=AudioVideo;AudioVideoEditing;
+StartupWMClass=com.aioconvert.aioconvert
