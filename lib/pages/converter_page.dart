@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -30,7 +31,7 @@ class _ConverterPageState extends State<ConverterPage> {
   bool _isHovering = false;
   bool _isConverting = false;
   bool _cancelRequested = false;
-  int _dropSequence = 0;
+  Process? _activeLinuxProcess;
   String? _outputDirectory;
   String? _allFormatExtension;
 
@@ -85,47 +86,17 @@ class _ConverterPageState extends State<ConverterPage> {
     }
   }
 
-  Future<void> _addDroppedFiles(DropDetails details) async {
+  Future<void> _addDroppedFiles(List<DropItem> items) async {
     final strings = AppLocalizations.of(context)!;
-    for (final item in details.items) {
-      if (item is DropDirectoryItem) {
+    for (final item in items) {
+      if (item is DropItemDirectory) {
         _showMessage(strings.dropFoldersUnsupported);
         continue;
       }
-      if (item is! DropFileItem) continue;
-
-      late final File stagedFile;
-      try {
-        stagedFile = await _stageDroppedFile(item);
-      } catch (error) {
-        if (!mounted) return;
-        _showMessage(strings.inspectFailed(item.name, error.toString()));
-        continue;
-      }
+      final fileSize = await item.length();
       if (!mounted) return;
-      await _addFile(
-        stagedFile.path,
-        item.name,
-        fileSize: await stagedFile.length(),
-      );
+      await _addFile(item.path, item.name, fileSize: fileSize);
     }
-  }
-
-  Future<File> _stageDroppedFile(DropFileItem item) async {
-    final temporaryDirectory = await getTemporaryDirectory();
-    final stagingDirectory = Directory(
-      p.join(temporaryDirectory.path, 'AIOconvert', 'dropped'),
-    );
-    await stagingDirectory.create(recursive: true);
-
-    final stagedFile = File(
-      p.join(
-        stagingDirectory.path,
-        '${DateTime.now().microsecondsSinceEpoch}_${_dropSequence++}_${p.basename(item.name)}',
-      ),
-    );
-    await item.file.openRead().pipe(stagedFile.openWrite());
-    return stagedFile;
   }
 
   Future<void> _addFile(String path, String name, {int? fileSize}) async {
@@ -133,30 +104,23 @@ class _ConverterPageState extends State<ConverterPage> {
     final strings = AppLocalizations.of(context)!;
     try {
       final probePath = _ffmpegInputPath(path);
-      final probeSession = await FFprobeKit.getMediaInformation(probePath);
-      final information = probeSession.getMediaInformation();
-      if (information == null) {
-        throw FormatException(strings.probeFailed);
-      }
+      final inspection = await _inspectMedia(probePath);
       final kind = classifyMedia(
         fileName: name,
-        streamTypes: information.getStreams().map(
-          (stream) => stream.getType() ?? '',
-        ),
+        streamTypes: inspection.streamTypes,
       );
       if (kind == null) {
         throw FormatException(strings.unsupportedFile);
       }
 
-      final duration = double.tryParse(information.getDuration() ?? '');
       final job = MediaJob(
         id: '${DateTime.now().microsecondsSinceEpoch}-${_jobs.length}',
         path: path,
         name: name,
         kind: kind,
         sourceFormat: p.extension(name).replaceFirst('.', '').toUpperCase(),
-        fileSize: fileSize ?? int.tryParse(information.getSize() ?? ''),
-        duration: duration,
+        fileSize: fileSize ?? inspection.fileSize,
+        duration: inspection.duration,
         outputFormat: _hasMixedKinds
             ? null
             : formatFor(kind, _allFormatExtension ?? ''),
@@ -166,6 +130,52 @@ class _ConverterPageState extends State<ConverterPage> {
     } catch (error) {
       _showMessage(strings.inspectFailed(name, error.toString()));
     }
+  }
+
+  Future<_MediaInspection> _inspectMedia(String path) async {
+    if (Platform.isLinux) {
+      final result = await Process.run('ffprobe', [
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration,size:stream=codec_type',
+        '-of',
+        'json',
+        path,
+      ]);
+      if (result.exitCode != 0) {
+        throw ProcessException(
+          'ffprobe',
+          [path],
+          result.stderr.toString().trim(),
+          result.exitCode,
+        );
+      }
+
+      final data = jsonDecode(result.stdout.toString()) as Map<String, dynamic>;
+      final format = data['format'] as Map<String, dynamic>? ?? {};
+      final streams = data['streams'] as List<dynamic>? ?? [];
+      return _MediaInspection(
+        streamTypes: streams.whereType<Map<String, dynamic>>().map(
+          (stream) => stream['codec_type'] as String? ?? '',
+        ),
+        duration: double.tryParse(format['duration'] as String? ?? ''),
+        fileSize: int.tryParse(format['size'] as String? ?? ''),
+      );
+    }
+
+    final probeSession = await FFprobeKit.getMediaInformation(path);
+    final information = probeSession.getMediaInformation();
+    if (information == null) {
+      throw const FormatException('FFprobe could not read this media file.');
+    }
+    return _MediaInspection(
+      streamTypes: information.getStreams().map(
+        (stream) => stream.getType() ?? '',
+      ),
+      duration: double.tryParse(information.getDuration() ?? ''),
+      fileSize: int.tryParse(information.getSize() ?? ''),
+    );
   }
 
   String _ffmpegInputPath(String path) {
@@ -263,6 +273,11 @@ class _ConverterPageState extends State<ConverterPage> {
         outputPath: outputPath,
         format: job.outputFormat!,
       );
+      if (Platform.isLinux) {
+        await _convertWithSystemFfmpeg(job, arguments, outputPath);
+        return;
+      }
+
       final done = Completer<void>();
       var lastProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
       final session = await FFmpegKit.executeWithArgumentsAsync(
@@ -316,9 +331,78 @@ class _ConverterPageState extends State<ConverterPage> {
     }
   }
 
+  Future<void> _convertWithSystemFfmpeg(
+    MediaJob job,
+    List<String> arguments,
+    String outputPath,
+  ) async {
+    final noOutputMessage = AppLocalizations.of(context)!.ffmpegNoOutput;
+    final process = await Process.start('ffmpeg', arguments);
+    _activeLinuxProcess = process;
+    final stderr = StringBuffer();
+    var lastProgressUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+    final stderrDone = process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          stderr.writeln(line);
+          final match = RegExp(r'time=(\d+):(\d+):(\d+(?:\.\d+)?)')
+              .firstMatch(line);
+          if (match == null || job.duration == null || job.duration! <= 0) {
+            return;
+          }
+          final elapsed =
+              int.parse(match[1]!) * 3600 +
+              int.parse(match[2]!) * 60 +
+              double.parse(match[3]!);
+          final now = DateTime.now();
+          if (now.difference(lastProgressUpdate).inMilliseconds < 250 ||
+              !mounted) {
+            return;
+          }
+          lastProgressUpdate = now;
+          setState(() {
+            job.progress = (elapsed / job.duration!).clamp(0.0, 1.0);
+          });
+        })
+        .asFuture<void>();
+    final stdoutDone = process.stdout.drain<void>();
+    final exitCode = await process.exitCode;
+    await Future.wait([stderrDone, stdoutDone]);
+    _activeLinuxProcess = null;
+
+    if (exitCode != 0) {
+      final reason = stderr
+          .toString()
+          .trim()
+          .split('\n')
+          .where((line) => line.isNotEmpty)
+          .lastOrNull;
+      throw ProcessException(
+        'ffmpeg',
+        arguments,
+        reason ?? 'FFmpeg exited with code $exitCode.',
+        exitCode,
+      );
+    }
+    if (!await File(outputPath).exists()) {
+      throw FileSystemException(noOutputMessage);
+    }
+    if (!mounted) return;
+    setState(() {
+      job.state = JobState.complete;
+      job.progress = 1;
+      job.outputPath = outputPath;
+    });
+  }
+
   Future<void> _cancelConversion() async {
     _cancelRequested = true;
-    await FFmpegKit.cancel();
+    if (Platform.isLinux) {
+      _activeLinuxProcess?.kill(ProcessSignal.sigint);
+    } else {
+      await FFmpegKit.cancel();
+    }
   }
 
   void _removeJob(MediaJob job) {
@@ -907,6 +991,18 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 }
 
+class _MediaInspection {
+  const _MediaInspection({
+    required this.streamTypes,
+    required this.duration,
+    required this.fileSize,
+  });
+
+  final Iterable<String> streamTypes;
+  final double? duration;
+  final int? fileSize;
+}
+
 class _DropZone extends StatelessWidget {
   const _DropZone({
     required this.hovering,
@@ -919,7 +1015,7 @@ class _DropZone extends StatelessWidget {
   final bool hovering;
   final VoidCallback onDragEntered;
   final VoidCallback onDragExited;
-  final Future<void> Function(DropDetails details) onFilesDropped;
+  final ValueChanged<List<DropItem>> onFilesDropped;
   final VoidCallback onPickFiles;
 
   @override
@@ -927,10 +1023,9 @@ class _DropZone extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context)!;
     return DropTarget(
-      acceptedKinds: const {DropItemKind.file, DropItemKind.directory},
-      onEnter: (_) => onDragEntered(),
-      onLeave: onDragExited,
-      onDrop: onFilesDropped,
+      onDragEntered: (_) => onDragEntered(),
+      onDragExited: (_) => onDragExited(),
+      onDragDone: (details) async => onFilesDropped(details.files),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),

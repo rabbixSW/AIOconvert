@@ -100,10 +100,11 @@ packages:
   desktop_drop:
     dependency: "direct main"
     description:
-      name: desktop_drop
-      sha256: "47ded09c85909edfed644fd4cbb5051b040d0aed5c79e7e062ea4b3b7156dbe4"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/desktop_drop"
+      ref: fd7b31b540ca159555daad8496ea17035fba0c93
+      resolved-ref: fd7b31b540ca159555daad8496ea17035fba0c93
+      url: "https://github.com/MixinNetwork/flutter-plugins.git"
+    source: git
     version: "0.8.4"
   fake_async:
     dependency: transitive
@@ -619,5 +620,5 @@ packages:
     source: hosted
     version: "3.1.4"
 sdks:
-  dart: ">=3.13.4 <4.0.0"
-  flutter: ">=3.44.0"
+  dart: ">=3.13.5 <4.0.0"
+  flutter: ">=3.47.7"

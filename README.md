@@ -30,6 +30,6 @@ flutter build linux
 flutter build apk
 ```
 
-FFmpeg and FFprobe are provided by `ffmpeg_kit_flutter_new`, which bundles the
-full GPL codec set for both target platforms. Review the package and codec
-licenses before distributing the application.
+Linux uses the system `ffmpeg` and `ffprobe` executables, which must be
+installed and available on `PATH`. Android uses `ffmpeg_kit_flutter_new`.
+Review the package and codec licenses before distributing the application.
