@@ -15,7 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../media_tools.dart';
+import '../models/media_inspection.dart';
 import '../models/media_job.dart';
+import 'converter/widgets/conversion_footer.dart';
+import 'converter/widgets/drop_zone.dart';
+import 'converter/widgets/empty_queue.dart';
+import 'converter/widgets/job_card.dart';
+import 'converter/widgets/jobs_header.dart';
+import 'converter/widgets/output_panel.dart';
 
 const _androidOutputFolderChannel = MethodChannel(
   'com.aioconvert.aioconvert/output_folder',
@@ -369,7 +376,7 @@ class _ConverterPageState extends State<ConverterPage> {
     }
   }
 
-  Future<_MediaInspection> _inspectMedia(String path) async {
+  Future<MediaInspection> _inspectMedia(String path) async {
     if (_usesSystemFfmpeg) {
       final ffprobe = _mediaToolExecutable('ffprobe');
       final result = await Process.run(ffprobe, [
@@ -393,7 +400,7 @@ class _ConverterPageState extends State<ConverterPage> {
       final data = jsonDecode(result.stdout.toString()) as Map<String, dynamic>;
       final format = data['format'] as Map<String, dynamic>? ?? {};
       final streams = data['streams'] as List<dynamic>? ?? [];
-      return _MediaInspection(
+      return MediaInspection(
         streamTypes: streams
             .whereType<Map<String, dynamic>>()
             .map((stream) => stream['codec_type'] as String? ?? '')
@@ -414,7 +421,7 @@ class _ConverterPageState extends State<ConverterPage> {
     if (information == null) {
       throw const FormatException('FFprobe could not read this media file.');
     }
-    return _MediaInspection(
+    return MediaInspection(
       streamTypes: information
           .getStreams()
           .map((stream) => stream.getType() ?? '')
@@ -871,7 +878,7 @@ class _ConverterPageState extends State<ConverterPage> {
                               ?.copyWith(color: colors.onSurfaceVariant),
                         ),
                         const SizedBox(height: 20),
-                        _DropZone(
+                        DropZone(
                           hovering: _isHovering,
                           compact: _jobs.isNotEmpty,
                           onDragEntered: () =>
@@ -882,574 +889,63 @@ class _ConverterPageState extends State<ConverterPage> {
                           onPickFiles: _pickFiles,
                         ),
                         const SizedBox(height: 18),
-                        _buildJobsHeader(context),
+                        JobsHeader(
+                          jobCount: _jobs.length,
+                          isConverting: _isConverting,
+                          onClear: () => setState(() {
+                            _jobs.clear();
+                            _allFormatExtension = null;
+                          }),
+                        ),
                         const SizedBox(height: 12),
                         if (_jobs.isEmpty)
-                          _buildEmptyState(context)
+                          const EmptyQueue()
                         else
                           ..._jobs.map(
                             (job) => Padding(
                               padding: const EdgeInsets.only(bottom: 10),
-                              child: _buildJobCard(context, job),
+                              child: JobCard(
+                                job: job,
+                                isConverting: _isConverting,
+                                onFormatChanged: (extension) =>
+                                    _setJobFormat(job, extension),
+                                onCancel: _cancelConversion,
+                                onRemove: () => _removeJob(job),
+                              ),
                             ),
                           ),
                         if (_jobs.isEmpty) ...[
                           const SizedBox(height: 14),
-                          _buildFooter(context),
+                          ConversionFooter(
+                            hasJobs: false,
+                            isConverting: _isConverting,
+                            canConvert: _canConvert,
+                            onConvert: _convertAll,
+                            onCancel: _cancelConversion,
+                          ),
                         ],
                       ],
                     ),
                   ),
-                  _buildOutputPanel(context),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOutputPanel(BuildContext context) {
-    final commonKind = _jobs.isEmpty || _hasMixedKinds
-        ? null
-        : _jobs.first.kind;
-    final formats = commonKind == null
-        ? const <OutputFormat>[]
-        : mediaFormats[commonKind]!;
-    final allFormatValue =
-        formats.any((format) => format.extension == _allFormatExtension)
-        ? _allFormatExtension
-        : null;
-    final strings = AppLocalizations.of(context)!;
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final narrow = constraints.maxWidth < 600;
-            final formatDropdown = DropdownButtonFormField<String>(
-              initialValue: allFormatValue,
-              isExpanded: true,
-              decoration: InputDecoration(
-                hintText: _hasMixedKinds
-                    ? strings.setEachFile
-                    : strings.chooseFormat,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 13,
-                ),
-              ),
-              items: formats
-                  .map(
-                    (format) => DropdownMenuItem(
-                      value: format.extension,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Text(
-                          format.label,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: commonKind == null ? null : _setAllFormat,
-            );
-            final formatControl = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                formatDropdown,
-                if (_hasMixedKinds)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      strings.mixedMediaWarning,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-            final convertButton = FilledButton.icon(
-              onPressed: _isConverting
-                  ? _cancelConversion
-                  : (_canConvert ? _convertAll : null),
-              icon: Icon(
-                _isConverting ? Icons.stop_rounded : Icons.bolt_rounded,
-              ),
-              label: Text(
-                _isConverting ? strings.stopConversion : strings.convertAll,
-              ),
-            );
-            return narrow
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(children: [Expanded(child: formatControl)]),
-                      const SizedBox(height: 8),
-                      SizedBox(width: double.infinity, child: convertButton),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(child: formatControl),
-                      const SizedBox(width: 12),
-                      convertButton,
-                    ],
-                  );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildJobsHeader(BuildContext context) {
-    final strings = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).colorScheme;
-    final narrow = MediaQuery.sizeOf(context).width < 600;
-    return Row(
-      children: [
-        Text(
-          strings.filesTitle,
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(width: 10),
-        if (_jobs.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${_jobs.length}',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ),
-        const Spacer(),
-        if (_jobs.isNotEmpty && !_isConverting)
-          TextButton.icon(
-            onPressed: () => setState(() {
-              _jobs.clear();
-              _allFormatExtension = null;
-            }),
-            icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-            label: Text(narrow ? strings.clear : strings.clearQueue),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    final strings = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.video_library_outlined,
-            size: 30,
-            color: colors.onSurfaceVariant,
-          ),
-          const SizedBox(height: 9),
-          Text(
-            strings.queueEmpty,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            strings.emptySubtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildJobCard(BuildContext context, MediaJob job) {
-    final colors = Theme.of(context).colorScheme;
-    final strings = AppLocalizations.of(context)!;
-    final narrow = MediaQuery.sizeOf(context).width < 600;
-    final formatDropdown = DropdownButton<String>(
-      value: job.outputFormat?.extension,
-      hint: Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: Text(strings.chooseFormat),
-      ),
-      isExpanded: true,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      underline: const SizedBox.shrink(),
-      borderRadius: BorderRadius.circular(14),
-      items: mediaFormats[job.kind]!
-          .map(
-            (format) => DropdownMenuItem(
-              value: format.extension,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Text(format.label, overflow: TextOverflow.ellipsis),
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: _isConverting
-          ? null
-          : (extension) => _setJobFormat(job, extension),
-    );
-    final metadata = Row(
-      children: [
-        _KindLabel(kind: job.kind, strings: strings),
-        const SizedBox(width: 8),
-        Text(
-          job.sourceFormat.isEmpty ? 'MEDIA' : job.sourceFormat,
-          style: Theme.of(context).textTheme.labelSmall
-              ?.copyWith(color: colors.onSurfaceVariant, letterSpacing: .6),
-        ),
-        if (job.fileSize != null) ...[
-          const SizedBox(width: 8),
-          Text(
-            '· ${_formatBytes(job.fileSize!)}',
-            style: Theme.of(context).textTheme.labelSmall
-                ?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
-      ],
-    );
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: colors.primaryContainer.withValues(alpha: .55),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(_kindIcon(job.kind), color: colors.primary),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        job.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 4),
-                      metadata,
-                    ],
-                  ),
-                ),
-                if (!narrow) ...[
-                  const SizedBox(width: 14),
-                  SizedBox(width: 190, child: formatDropdown),
-                  const SizedBox(width: 8),
-                ],
-                if (job.state == JobState.converting)
-                  IconButton(
-                    tooltip: strings.cancel,
-                    onPressed: _cancelConversion,
-                    icon: const Icon(Icons.close_rounded),
-                  )
-                else if (!_isConverting)
-                  IconButton(
-                    tooltip: strings.removeFile,
-                    onPressed: () => _removeJob(job),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: colors.onSurfaceVariant,
-                    ),
-                  )
-                else
-                  const SizedBox(width: 48),
-              ],
-            ),
-            if (narrow) ...[const SizedBox(height: 12), formatDropdown],
-            if (job.state == JobState.converting) ...[
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: job.duration != null && job.duration! > 0
-                    ? job.progress
-                    : null,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                job.duration != null && job.duration! > 0
-                    ? strings.convertingPercent((job.progress * 100).round())
-                    : strings.convertingProgress,
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: colors.onSurfaceVariant),
-              ),
-            ],
-            if (job.state == JobState.complete) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 17,
-                    color: colors.tertiary,
-                  ),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Text(
-                      strings.savedOutput(p.basename(job.outputPath!)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(color: colors.tertiary),
-                    ),
+                  OutputPanel(
+                    jobs: _jobs,
+                    hasMixedKinds: _hasMixedKinds,
+                    allFormatExtension: _allFormatExtension,
+                    isConverting: _isConverting,
+                    canConvert: _canConvert,
+                    onSetAllFormat: _setAllFormat,
+                    onConvert: _convertAll,
+                    onCancel: _cancelConversion,
                   ),
                 ],
               ),
-            ],
-            if (job.state == JobState.failed && job.error != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                job.error!,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: colors.error),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final strings = AppLocalizations.of(context)!;
-    final narrow = MediaQuery.sizeOf(context).width < 784;
-    return Column(
-      children: [
-        if (narrow && _jobs.isNotEmpty) ...[
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _isConverting
-                  ? _cancelConversion
-                  : (_canConvert ? _convertAll : null),
-              icon: Icon(
-                _isConverting ? Icons.stop_rounded : Icons.bolt_rounded,
-              ),
-              label: Text(
-                _isConverting ? strings.stopConversion : strings.convertAll,
-              ),
             ),
           ),
-          const SizedBox(height: 14),
-        ],
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.lock_outline_rounded,
-              size: 14,
-              color: colors.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                Platform.isAndroid
-                    ? strings.footerAndroid
-                    : strings.footerDesktop,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(color: colors.onSurfaceVariant),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  static String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
-}
-
-class _MediaInspection {
-  const _MediaInspection({
-    required this.streamTypes,
-    required this.streamFrameCounts,
-    required this.duration,
-    required this.fileSize,
-  });
-
-  final Iterable<String> streamTypes;
-  final Iterable<int?> streamFrameCounts;
-  final double? duration;
-  final int? fileSize;
-}
-
-class _DropZone extends StatelessWidget {
-  const _DropZone({
-    required this.hovering,
-    required this.compact,
-    required this.onDragEntered,
-    required this.onDragExited,
-    required this.onFilesDropped,
-    required this.onPickFiles,
-  });
-
-  final bool hovering;
-  final bool compact;
-  final VoidCallback onDragEntered;
-  final VoidCallback onDragExited;
-  final ValueChanged<List<DropItem>> onFilesDropped;
-  final VoidCallback onPickFiles;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final strings = AppLocalizations.of(context)!;
-    final dropZone = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 14 : 20,
-        vertical: compact ? 8 : 25,
-      ),
-      decoration: BoxDecoration(
-        color: hovering
-            ? colors.primaryContainer.withValues(alpha: .28)
-            : colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: hovering ? colors.primary : colors.outlineVariant,
-          width: hovering ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: compact ? 30 : 48,
-            height: compact ? 30 : 48,
-            decoration: BoxDecoration(
-              color: colors.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.file_upload_outlined, color: colors.primary),
-          ),
-          SizedBox(height: compact ? 3 : 13),
-          Text(
-            Platform.isAndroid
-                ? (compact
-                      ? strings.selectMoreFiles
-                      : strings.selectFilesToConvert)
-                : compact
-                ? (hovering ? strings.dropHover : strings.dropMoreFiles)
-                : (hovering ? strings.dropHover : strings.dropPrompt),
-            style:
-                (compact
-                        ? Theme.of(context).textTheme.bodyMedium
-                        : Theme.of(context).textTheme.titleMedium)
-                    ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          if (!compact) ...[
-            const SizedBox(height: 5),
-            Text(
-              strings.mediaKinds,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: colors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: onPickFiles,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(
-                Platform.isAndroid ? strings.selectFiles : strings.browseFiles,
-              ),
-            ),
-          ] else ...[
-            TextButton.icon(
-              onPressed: onPickFiles,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(
-                Platform.isAndroid ? strings.selectFiles : strings.browseFiles,
-              ),
-            ),
-          ],
         ],
       ),
     );
-    if (Platform.isAndroid) return dropZone;
-    return DropTarget(
-      onDragEntered: (_) => onDragEntered(),
-      onDragExited: (_) => onDragExited(),
-      onDragDone: (details) async => onFilesDropped(details.files),
-      child: dropZone,
-    );
   }
 }
-
-class _KindLabel extends StatelessWidget {
-  const _KindLabel({required this.kind, required this.strings});
-
-  final MediaKind kind;
-  final AppLocalizations strings;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: colors.secondaryContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        switch (kind) {
-          MediaKind.video => strings.video,
-          MediaKind.audio => strings.audio,
-          MediaKind.image => strings.image,
-        },
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: colors.onSecondaryContainer,
-          fontWeight: FontWeight.w600,
-          fontSize: 9,
-        ),
-      ),
-    );
-  }
-}
-
-IconData _kindIcon(MediaKind kind) => switch (kind) {
-  MediaKind.video => Icons.movie_outlined,
-  MediaKind.audio => Icons.music_note_rounded,
-  MediaKind.image => Icons.image_outlined,
-};
 
 TextStyle? _eyebrowStyle(BuildContext context) =>
     Theme.of(context).textTheme.labelSmall?.copyWith(
