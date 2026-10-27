@@ -1,8 +1,9 @@
 app-id: com.aioconvert.aioconvert
+branch: stable
 runtime: org.freedesktop.Platform
 runtime-version: "25.08"
 sdk: org.freedesktop.Sdk
-command: AppRun
+command: AIOconvert
 finish-args:
   - --socket=wayland
   - --socket=fallback-x11
@@ -12,8 +13,7 @@ modules:
   - name: aioconvert
     buildsystem: simple
     build-commands:
-      - install -d /app
       - cp -a . /app/
     sources:
       - type: dir
-        path: ../../build/release/AppDir
+        path: ../../build/release/flatpak-files

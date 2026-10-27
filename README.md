@@ -74,11 +74,12 @@ commands below.
 	`scripts/build-windows-installer.ps1`. The portable ZIP script does not need
 	Inno Setup. Both Windows packaging scripts download and verify FFmpeg, so
 	network access is required.
-- **Linux AppImage:** `linuxdeploy` for
-	`scripts/build-linux-appimage.sh`, plus `ffmpeg` and `ffprobe` on `PATH`.
+- **Linux AppImage:** `linuxdeploy`, `ffmpeg`, and `ffprobe` on `PATH` for
+	`scripts/build-linux-appimage.sh`.
 - **Linux Flatpak:** `flatpak` and `flatpak-builder`, with the Flathub remote
 	configured. The script builds against the Freedesktop 25.08 runtime and
-	downloads its SDK/runtime dependencies through Flathub.
+	downloads its SDK/runtime dependencies through Flathub. `curl`, `tar`, and
+	`sha256sum` are also required to fetch and verify the bundled FFmpeg build.
 - **Android release APK:** a private release keystore and the signing
 	environment variables described below. Keep the keystore and passwords
 	private and backed up; the same signing key is needed for future updates.
@@ -112,8 +113,9 @@ flutter build apk
 flutter build windows
 ```
 
-Linux uses the system `ffmpeg` and `ffprobe` executables, which must be
-installed and available on `PATH`. Android uses `ffmpeg_kit_flutter_new`.
+Linux source runs use `ffmpeg` and `ffprobe` from `PATH`; install them on the
+system when running from source. The Flatpak package includes its own FFmpeg
+executables. Android uses `ffmpeg_kit_flutter_new`.
 Windows uses the bundled FFmpeg and FFprobe executables in the portable
 package; when running from source, install those executables on `PATH`.
 The Windows FFmpeg Essentials binaries from gyan.dev are static GPLv3 builds.
@@ -134,15 +136,20 @@ The packaging scripts place finished artifacts in `dist/`:
 ./scripts/build-android-apk.sh
 ```
 
-Linux packaging requires `ffmpeg`, `ffprobe`, and `linuxdeploy` on `PATH`.
-Both Linux scripts bundle those FFmpeg executables and their shared-library
-dependencies. The shared staging script sets `NO_STRIP=1` for linuxdeploy to
-avoid failures stripping RELR-enabled system libraries. The AppImage script
-uses linuxdeploy's AppImage output plugin.
-Flatpak packaging additionally requires `flatpak` and `flatpak-builder`, with
-the Flathub remote configured so the Freedesktop 25.08 runtime and SDK can be
-installed. Flatpak accesses user files through desktop file chooser and
-drag-and-drop portals.
+Linux AppImage packaging requires `ffmpeg`, `ffprobe`, and `linuxdeploy` on
+`PATH`; it bundles those executables and their shared-library dependencies.
+The shared staging script sets `NO_STRIP=1` for linuxdeploy to avoid failures
+stripping RELR-enabled system libraries. The AppImage script uses linuxdeploy's
+AppImage output plugin.
+
+Flatpak packaging requires `flatpak` and `flatpak-builder`, with the Flathub
+remote configured so the Freedesktop 25.08 runtime and SDK can be installed.
+It packages the Flutter bundle directly without linuxdeploy's host libraries,
+downloads and SHA-256 verifies FFmpeg's shared GPL build, and installs the
+desktop entry and icon in Flatpak's standard locations. Flatpak accesses user
+files through desktop file chooser and drag-and-drop portals.
+The Flatpak package includes FFmpeg's GPL license and build attribution; review
+the codec licenses and obligations before redistributing it.
 
 Android release builds require a private release keystore. Set
 `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and
