@@ -445,6 +445,24 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   String _mediaToolExecutable(String tool) {
+    if (Platform.isLinux) {
+      final appDir = Platform.environment['APPDIR'];
+      final candidates = [
+        if (appDir != null) p.join(appDir, 'usr', 'bin', tool),
+        p.join(p.dirname(Platform.resolvedExecutable), tool),
+      ];
+      for (final candidate in candidates) {
+        if (File(candidate).existsSync()) return candidate;
+      }
+
+      for (final directory in (Platform.environment['PATH'] ?? '').split(':')) {
+        if (directory.isEmpty) continue;
+        final candidate = p.join(directory, tool);
+        if (File(candidate).existsSync()) return candidate;
+      }
+      return tool;
+    }
+
     if (!Platform.isWindows) return tool;
     final bundledExecutable = p.join(
       p.dirname(Platform.resolvedExecutable),

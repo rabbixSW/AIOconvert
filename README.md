@@ -74,8 +74,9 @@ commands below.
 	`scripts/build-windows-installer.ps1`. The portable ZIP script does not need
 	Inno Setup. Both Windows packaging scripts download and verify FFmpeg, so
 	network access is required.
-- **Linux AppImage:** `linuxdeploy`, `ffmpeg`, and `ffprobe` on `PATH` for
-	`scripts/build-linux-appimage.sh`.
+- **Linux AppImage:** `linuxdeploy`, `curl`, `tar`, and `sha256sum` for
+	`scripts/build-linux-appimage.sh`. FFmpeg and ffprobe are downloaded as a
+	checksum-verified shared build; host FFmpeg packages are not required.
 - **Linux Flatpak:** `flatpak` and `flatpak-builder`, with the Flathub remote
 	configured. The script builds against the Freedesktop 25.08 runtime and
 	downloads its SDK/runtime dependencies through Flathub. `curl`, `tar`, and
@@ -140,11 +141,14 @@ The packaging scripts place finished artifacts in `dist/`:
 ./scripts/build-android-apk.sh
 ```
 
-Linux AppImage packaging requires `ffmpeg`, `ffprobe`, and `linuxdeploy` on
-`PATH`; it bundles those executables and their shared-library dependencies.
-The shared staging script sets `NO_STRIP=1` for linuxdeploy to avoid failures
-stripping RELR-enabled system libraries. The AppImage script uses linuxdeploy's
-AppImage output plugin.
+Linux AppImage packaging requires `linuxdeploy`, `curl`, `tar`, and `sha256sum`.
+It downloads and SHA-256 verifies FFmpeg's shared GPL build, then bundles its
+matching libraries and license. Using a matching FFmpeg build avoids runtime
+crashes caused by copying host FFmpeg binaries alongside incompatible
+libraries. AppImage packaging supports x86_64 and arm64. The shared staging
+script sets `NO_STRIP=1` for linuxdeploy to avoid failures stripping
+RELR-enabled system libraries. The AppImage script uses linuxdeploy's AppImage
+output plugin.
 
 Flatpak packaging requires `flatpak` and `flatpak-builder`, with the Flathub
 remote configured so the Freedesktop 25.08 runtime and SDK can be installed.
