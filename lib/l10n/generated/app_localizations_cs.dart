@@ -22,6 +22,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get heroTitle => 'Přetáhněte soubory sem a převeďte je';
 
   @override
+  String get selectFilesToConvert => 'Vyberte soubory k převodu';
+
+  @override
+  String get selectMoreFiles => 'Vyberte další soubory';
+
+  @override
+  String get selectFiles => 'Vybrat soubory';
+
+  @override
   String get heroSubtitle =>
       'Převádějte videa, zvuk i obrázky přímo ve svém zařízení.';
 
@@ -45,6 +54,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get saveFolderSelection => 'Vybrat složku pro uložení';
+
+  @override
+  String get androidOutputFolderTitle => 'Vyberte výstupní složku převodu';
+
+  @override
+  String get androidOutputFolderMessage =>
+      'Vyberte, kam se mají ukládat převedené soubory. Složku můžete později změnit v nastavení složky pro ukládání.';
+
+  @override
+  String get androidOutputFolderButton => 'Vybrat složku';
+
+  @override
+  String get androidOutputFolderLater => 'Teď ne';
+
+  @override
+  String get androidOutputFolderNotGranted =>
+      'Nebyla vybrána výstupní složka. Převedené soubory se uloží do úložiště aplikace. Složku můžete vybrat později v nastavení složky pro ukládání.';
 
   @override
   String get saveNextToOriginal => 'Uložit vedle originálu';
@@ -124,7 +150,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get footerAndroid =>
-      'Soubory se zpracovávají v zařízení · výstup se ukládá do dokumentů aplikace';
+      'Soubory se zpracovávají v zařízení · výstup se ukládá do vybrané složky';
 
   @override
   String get footerDesktop =>
@@ -156,6 +182,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get language => 'Jazyk';
+
+  @override
+  String get defaultEnglish => 'Výchozí (angličtina)';
 
   @override
   String get english => 'English';

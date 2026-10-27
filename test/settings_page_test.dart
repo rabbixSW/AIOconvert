@@ -58,6 +58,7 @@ void main() {
             themeMode: ThemeMode.dark,
             seedColor: const Color(0xff7c8cff),
             locale: null,
+            systemLocale: const Locale('en'),
             onThemeModeChanged: (_) {},
             onSeedColorChanged: (_) {},
             onLocaleChanged: (locale) => selectedLocale = locale,
@@ -78,4 +79,56 @@ void main() {
       expect(selectedLocale, const Locale('cs'));
     },
   );
+
+  testWidgets('system language label is independent of selected app language', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('cs'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsPage(
+          themeMode: ThemeMode.dark,
+          seedColor: const Color(0xff7c8cff),
+          locale: const Locale('cs'),
+          systemLocale: const Locale('en'),
+          onThemeModeChanged: (_) {},
+          onSeedColorChanged: (_) {},
+          onLocaleChanged: (_) {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    expect(find.text('Podle systému (English)'), findsOneWidget);
+    expect(find.text('Podle systému (Čeština)'), findsNothing);
+  });
+
+  testWidgets('unsupported system language uses the English default label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('cs'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsPage(
+          themeMode: ThemeMode.dark,
+          seedColor: const Color(0xff7c8cff),
+          locale: null,
+          systemLocale: null,
+          onThemeModeChanged: (_) {},
+          onSeedColorChanged: (_) {},
+          onLocaleChanged: (_) {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    expect(find.text('Výchozí (angličtina)'), findsNWidgets(2));
+    expect(find.text('Podle systému (Čeština)'), findsNothing);
+  });
 }

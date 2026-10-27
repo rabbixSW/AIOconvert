@@ -7,6 +7,7 @@ class SettingsPage extends StatefulWidget {
     required this.themeMode,
     required this.seedColor,
     required this.locale,
+    required this.systemLocale,
     required this.onThemeModeChanged,
     required this.onSeedColorChanged,
     required this.onLocaleChanged,
@@ -16,6 +17,7 @@ class SettingsPage extends StatefulWidget {
   final ThemeMode themeMode;
   final Color seedColor;
   final Locale? locale;
+  final Locale? systemLocale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueChanged<Color> onSeedColorChanged;
   final ValueChanged<Locale?> onLocaleChanged;
@@ -216,7 +218,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     DropdownMenuItem(
                       value: 'system',
                       child: Text(
-                        '${strings.system} (${_languageLabel(strings, Localizations.localeOf(context).languageCode)})',
+                        widget.systemLocale == null
+                            ? strings.defaultEnglish
+                            : '${strings.system} (${_languageLabel(strings, widget.systemLocale!.languageCode)})',
                       ),
                     ),
                     ...AppLocalizations.supportedLocales.map(

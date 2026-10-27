@@ -22,6 +22,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get heroTitle => 'Drag and drop files to convert them';
 
   @override
+  String get selectFilesToConvert => 'Select files to convert';
+
+  @override
+  String get selectMoreFiles => 'Select more files to add';
+
+  @override
+  String get selectFiles => 'Select files';
+
+  @override
   String get heroSubtitle =>
       'Convert videos, audio and images privately on your device.';
 
@@ -45,6 +54,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveFolderSelection => 'Save folder selection';
+
+  @override
+  String get androidOutputFolderTitle => 'Select conversion output folder';
+
+  @override
+  String get androidOutputFolderMessage =>
+      'Choose where converted files should be saved. You can change the folder later in Save folder selection.';
+
+  @override
+  String get androidOutputFolderButton => 'Select folder';
+
+  @override
+  String get androidOutputFolderLater => 'Not now';
+
+  @override
+  String get androidOutputFolderNotGranted =>
+      'No output folder was selected. Converted files will be saved in app storage. You can select a folder later in Save folder selection.';
 
   @override
   String get saveNextToOriginal => 'Save next to original';
@@ -124,7 +150,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get footerAndroid =>
-      'Files are processed on your device · outputs are stored in app documents';
+      'Files are processed on your device · outputs are saved to the selected folder';
 
   @override
   String get footerDesktop => 'Files are processed on your device · no uploads';
@@ -155,6 +181,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get language => 'Language';
+
+  @override
+  String get defaultEnglish => 'Default (English)';
 
   @override
   String get english => 'English';

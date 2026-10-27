@@ -18,11 +18,25 @@ class _AioConvertAppState extends State<AioConvertApp> {
   ThemeMode _themeMode = ThemeMode.dark;
   Color _seedColor = const Color(0xff7c8cff);
   Locale? _locale;
+  late final Locale? _systemLocale;
 
   @override
   void initState() {
     super.initState();
+    _systemLocale = _resolveSystemLocale();
     _loadSettings();
+  }
+
+  Locale? _resolveSystemLocale() {
+    for (final deviceLocale
+        in WidgetsBinding.instance.platformDispatcher.locales) {
+      for (final supportedLocale in AppLocalizations.supportedLocales) {
+        if (supportedLocale.languageCode == deviceLocale.languageCode) {
+          return supportedLocale;
+        }
+      }
+    }
+    return null;
   }
 
   Future<void> _loadSettings() async {
@@ -73,6 +87,7 @@ class _AioConvertAppState extends State<AioConvertApp> {
           themeMode: _themeMode,
           seedColor: _seedColor,
           locale: _locale,
+          systemLocale: _systemLocale,
           onThemeModeChanged: _setThemeMode,
           onSeedColorChanged: _setSeedColor,
           onLocaleChanged: _setLocale,

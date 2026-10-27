@@ -22,6 +22,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get heroTitle => 'Trascina i file qui per convertirli';
 
   @override
+  String get selectFilesToConvert => 'Seleziona i file da convertire';
+
+  @override
+  String get selectMoreFiles => 'Seleziona altri file';
+
+  @override
+  String get selectFiles => 'Seleziona file';
+
+  @override
   String get heroSubtitle =>
       'Converti video, audio e immagini direttamente sul tuo dispositivo.';
 
@@ -45,6 +54,23 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get saveFolderSelection => 'Seleziona cartella di destinazione';
+
+  @override
+  String get androidOutputFolderTitle => 'Seleziona la cartella di output';
+
+  @override
+  String get androidOutputFolderMessage =>
+      'Scegli dove salvare i file convertiti. Puoi cambiare la cartella in seguito nelle impostazioni di salvataggio.';
+
+  @override
+  String get androidOutputFolderButton => 'Seleziona cartella';
+
+  @override
+  String get androidOutputFolderLater => 'Non ora';
+
+  @override
+  String get androidOutputFolderNotGranted =>
+      'Non è stata selezionata alcuna cartella di output. I file convertiti verranno salvati nella memoria dell’app. Puoi selezionare una cartella in seguito nelle impostazioni di salvataggio.';
 
   @override
   String get saveNextToOriginal => 'Salva accanto all’originale';
@@ -124,7 +150,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get footerAndroid =>
-      'File elaborati sul dispositivo · risultati nei documenti dell’app';
+      'File elaborati sul dispositivo · risultati nella cartella selezionata';
 
   @override
   String get footerDesktop =>
@@ -157,6 +183,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get language => 'Lingua';
+
+  @override
+  String get defaultEnglish => 'Predefinito (inglese)';
 
   @override
   String get english => 'English';

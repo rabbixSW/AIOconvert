@@ -22,6 +22,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get heroTitle => 'Glissez-déposez des fichiers pour les convertir';
 
   @override
+  String get selectFilesToConvert => 'Sélectionnez les fichiers à convertir';
+
+  @override
+  String get selectMoreFiles => 'Sélectionnez d’autres fichiers';
+
+  @override
+  String get selectFiles => 'Sélectionner des fichiers';
+
+  @override
   String get heroSubtitle =>
       'Convertissez vidéos, audio et images directement sur votre appareil.';
 
@@ -46,6 +55,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get saveFolderSelection => 'Choisir le dossier d’enregistrement';
+
+  @override
+  String get androidOutputFolderTitle => 'Sélectionner le dossier de sortie';
+
+  @override
+  String get androidOutputFolderMessage =>
+      'Choisissez le dossier où enregistrer les fichiers convertis. Vous pourrez le modifier plus tard dans les paramètres du dossier d’enregistrement.';
+
+  @override
+  String get androidOutputFolderButton => 'Sélectionner le dossier';
+
+  @override
+  String get androidOutputFolderLater => 'Plus tard';
+
+  @override
+  String get androidOutputFolderNotGranted =>
+      'Aucun dossier de sortie n’a été sélectionné. Les fichiers seront enregistrés dans le stockage de l’application. Vous pourrez sélectionner un dossier plus tard dans les paramètres d’enregistrement.';
 
   @override
   String get saveNextToOriginal => 'Enregistrer à côté de l’original';
@@ -125,7 +151,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get footerAndroid =>
-      'Traitement sur votre appareil · fichiers dans les documents de l’application';
+      'Traitement sur votre appareil · fichiers dans le dossier sélectionné';
 
   @override
   String get footerDesktop => 'Traitement sur votre appareil · aucun envoi';
@@ -157,6 +183,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get language => 'Langue';
+
+  @override
+  String get defaultEnglish => 'Par défaut (anglais)';
 
   @override
   String get english => 'English';

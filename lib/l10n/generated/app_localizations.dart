@@ -136,6 +136,24 @@ abstract class AppLocalizations {
   /// **'Drag and drop files to convert them'**
   String get heroTitle;
 
+  /// No description provided for @selectFilesToConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Select files to convert'**
+  String get selectFilesToConvert;
+
+  /// No description provided for @selectMoreFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Select more files to add'**
+  String get selectMoreFiles;
+
+  /// No description provided for @selectFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Select files'**
+  String get selectFiles;
+
   /// No description provided for @heroSubtitle.
   ///
   /// In en, this message translates to:
@@ -183,6 +201,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save folder selection'**
   String get saveFolderSelection;
+
+  /// No description provided for @androidOutputFolderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select conversion output folder'**
+  String get androidOutputFolderTitle;
+
+  /// No description provided for @androidOutputFolderMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where converted files should be saved. You can change the folder later in Save folder selection.'**
+  String get androidOutputFolderMessage;
+
+  /// No description provided for @androidOutputFolderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select folder'**
+  String get androidOutputFolderButton;
+
+  /// No description provided for @androidOutputFolderLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get androidOutputFolderLater;
+
+  /// No description provided for @androidOutputFolderNotGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'No output folder was selected. Converted files will be saved in app storage. You can select a folder later in Save folder selection.'**
+  String get androidOutputFolderNotGranted;
 
   /// No description provided for @saveNextToOriginal.
   ///
@@ -325,7 +373,7 @@ abstract class AppLocalizations {
   /// No description provided for @footerAndroid.
   ///
   /// In en, this message translates to:
-  /// **'Files are processed on your device · outputs are stored in app documents'**
+  /// **'Files are processed on your device · outputs are saved to the selected folder'**
   String get footerAndroid;
 
   /// No description provided for @footerDesktop.
@@ -387,6 +435,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get language;
+
+  /// No description provided for @defaultEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Default (English)'**
+  String get defaultEnglish;
 
   /// No description provided for @english.
   ///

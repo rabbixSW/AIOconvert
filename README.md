@@ -115,7 +115,11 @@ flutter build windows
 
 Linux source runs use `ffmpeg` and `ffprobe` from `PATH`; install them on the
 system when running from source. The Flatpak package includes its own FFmpeg
-executables. Android uses `ffmpeg_kit_flutter_new`.
+executables. On Android, the first launch offers a system folder picker to
+grant persistent access to Downloads; converted files use that folder by
+default. The folder can be changed from the save-folder control. If access is
+declined, files are saved in private app storage until a folder is selected.
+Android uses `ffmpeg_kit_flutter_new` for conversion.
 Windows uses the bundled FFmpeg and FFprobe executables in the portable
 package; when running from source, install those executables on `PATH`.
 The Windows FFmpeg Essentials binaries from gyan.dev are static GPLv3 builds.
@@ -146,7 +150,8 @@ Flatpak packaging requires `flatpak` and `flatpak-builder`, with the Flathub
 remote configured so the Freedesktop 25.08 runtime and SDK can be installed.
 It packages the Flutter bundle directly without linuxdeploy's host libraries,
 downloads and SHA-256 verifies FFmpeg's shared GPL build, and installs the
-desktop entry and icon in Flatpak's standard locations. Flatpak accesses user
+desktop entry and icon in Flatpak's standard locations. The sandbox is granted
+read/write access to the user's Downloads folder. Flatpak accesses other user
 files through desktop file chooser and drag-and-drop portals.
 The Flatpak package includes FFmpeg's GPL license and build attribution; review
 the codec licenses and obligations before redistributing it.

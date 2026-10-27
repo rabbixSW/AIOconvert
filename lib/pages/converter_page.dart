@@ -8,6 +8,7 @@ import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../media_tools.dart';
 import '../models/media_job.dart';
+
+const _androidOutputFolderChannel = MethodChannel(
+  'com.aioconvert.aioconvert/output_folder',
+);
 
 class ConverterPage extends StatefulWidget {
   const ConverterPage({required this.onOpenSettings, super.key});
@@ -32,8 +37,10 @@ class _ConverterPageState extends State<ConverterPage> {
   bool _cancelRequested = false;
   Process? _activeFfmpegProcess;
   String? _outputDirectory;
+  String? _outputDirectoryLabel;
   String? _allFormatExtension;
   bool _saveNextToOriginal = false;
+  bool _hasAndroidOutputFolderPermission = false;
 
   bool get _hasMixedKinds => _jobs.map((job) => job.kind).toSet().length > 1;
   bool get _usesSystemFfmpeg => Platform.isLinux || Platform.isWindows;
@@ -41,6 +48,7 @@ class _ConverterPageState extends State<ConverterPage> {
   bool get _canConvert =>
       _jobs.isNotEmpty &&
       !_isConverting &&
+      (_outputDirectory != null || _saveNextToOriginal) &&
       _jobs.every((job) => job.outputFormat != null);
 
   @override
@@ -52,133 +60,250 @@ class _ConverterPageState extends State<ConverterPage> {
   Future<void> _loadOutputDirectory() async {
     final appDirectory = await getApplicationDocumentsDirectory();
     final preferences = await SharedPreferences.getInstance();
+    if (Platform.isAndroid) {
+      final folder = await _getAndroidOutputFolder();
+      if (!mounted) return;
+      setState(() {
+        _outputDirectory = folder?['uri'] ?? appDirectory.path;
+        _outputDirectoryLabel = folder?['name'] ?? 'appStorage';
+        _hasAndroidOutputFolderPermission = folder != null;
+      });
+      if (folder == null &&
+          !(preferences.getBool('androidDownloadsPrompted') ?? false)) {
+        await preferences.setBool('androidDownloadsPrompted', true);
+        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _promptForAndroidOutputFolder();
+        });
+      }
+      return;
+    }
+
     final saveNextToOriginal =
-        !Platform.isAndroid &&
-        (preferences.getBool('saveNextToOriginal') ?? false);
-    final savedPath = !Platform.isAndroid
-        ? preferences.getString('outputDirectory')
-        : null;
-    final directory = savedPath == null
-        ? Directory(appDirectory.path)
-        : Directory(savedPath);
+        preferences.getBool('saveNextToOriginal') ?? false;
+    final savedPath = preferences.getString('outputDirectory');
+    final downloadsDirectory = await getDownloadsDirectory();
+    final homeDirectory = Platform.isWindows
+        ? Platform.environment['USERPROFILE']
+        : Platform.environment['HOME'];
+    final defaultPath =
+        downloadsDirectory?.path ??
+        (homeDirectory == null ? null : p.join(homeDirectory, 'Downloads'));
+    if (defaultPath == null) {
+      throw StateError('Could not determine the Downloads folder.');
+    }
+    final directory = Directory(savedPath ?? defaultPath);
     final selectedDirectory = await directory.exists()
         ? directory.path
-        : appDirectory.path;
+        : defaultPath;
+    await Directory(selectedDirectory).create(recursive: true);
     if (!mounted) return;
     setState(() {
       _outputDirectory = selectedDirectory;
+      _outputDirectoryLabel = p.basename(selectedDirectory);
       _saveNextToOriginal = saveNextToOriginal;
     });
+  }
+
+  Future<Map<String, String>?> _getAndroidOutputFolder() async {
+    final folder = await _androidOutputFolderChannel
+        .invokeMapMethod<String, String>('getOutputFolder');
+    return folder;
+  }
+
+  Future<Map<String, String>?> _chooseAndroidOutputFolder() async {
+    try {
+      return await _androidOutputFolderChannel.invokeMapMethod<String, String>(
+        'chooseOutputFolder',
+      );
+    } on PlatformException catch (error) {
+      if (mounted) {
+        _showMessage(error.message ?? error.code);
+      }
+      return null;
+    }
+  }
+
+  Future<void> _promptForAndroidOutputFolder() async {
+    if (!mounted) return;
+    final strings = AppLocalizations.of(context)!;
+    final chooseFolder = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.androidOutputFolderTitle),
+        content: Text(strings.androidOutputFolderMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(strings.androidOutputFolderLater),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(strings.androidOutputFolderButton),
+          ),
+        ],
+      ),
+    );
+    if (chooseFolder == true) {
+      final folder = await _chooseAndroidOutputFolder();
+      if (folder != null) {
+        await _setAndroidOutputFolder(folder);
+      } else if (mounted) {
+        _showMessage(strings.androidOutputFolderNotGranted);
+      }
+    }
+  }
+
+  Future<void> _setAndroidOutputFolder(Map<String, String> folder) async {
+    final uri = folder['uri'];
+    final name = folder['name'];
+    if (uri == null || name == null) {
+      throw StateError('The selected output folder is invalid.');
+    }
+    if (!mounted) return;
+    setState(() {
+      _outputDirectory = uri;
+      _outputDirectoryLabel = name;
+      _hasAndroidOutputFolderPermission = true;
+    });
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('outputDirectory', uri);
   }
 
   Future<void> _showSaveSettings() async {
     final strings = AppLocalizations.of(context)!;
     var selectedDirectory = _outputDirectory;
+    var selectedDirectoryLabel = _outputDirectoryLabel;
+    var hasAndroidFolderPermission = _hasAndroidOutputFolderPermission;
     var saveNextToOriginal = _saveNextToOriginal;
-    final result = await showDialog<({String? directory, bool nextToOriginal})>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(strings.saveFolderSelection),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!Platform.isAndroid)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: saveNextToOriginal,
-                  title: Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(strings.saveNextToOriginal),
-                  ),
-                  onChanged: (value) =>
-                      setDialogState(() => saveNextToOriginal = value ?? false),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(left: 12, bottom: 12),
-                  child: Text(
-                    strings.saveNextToOriginalAndroidUnavailable,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              if (!Platform.isAndroid) ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: Text(strings.saveTo, style: _eyebrowStyle(context)),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final directory = selectedDirectory;
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Text(
-                              directory == null
-                                  ? strings.loadingFolder
-                                  : p.basename(directory),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        },
+    final result =
+        await showDialog<
+          ({
+            String? directory,
+            String? directoryLabel,
+            bool hasAndroidFolderPermission,
+            bool nextToOriginal,
+          })
+        >(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              title: Text(strings.saveFolderSelection),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!Platform.isAndroid)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: saveNextToOriginal,
+                      title: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(strings.saveNextToOriginal),
+                      ),
+                      onChanged: (value) => setDialogState(
+                        () => saveNextToOriginal = value ?? false,
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, bottom: 12),
+                      child: Text(
+                        strings.saveNextToOriginalAndroidUnavailable,
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    IconButton(
-                      tooltip: strings.chooseFolder,
-                      onPressed: saveNextToOriginal
-                          ? null
-                          : () async {
-                              final path = await FilePicker.getDirectoryPath(
-                                dialogTitle: strings.chooseFolder,
-                                initialDirectory: selectedDirectory,
-                              );
-                              if (path != null) {
-                                setDialogState(() => selectedDirectory = path);
-                              }
-                            },
-                      icon: const Icon(Icons.folder_open_outlined),
-                    ),
-                  ],
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Text(strings.saveTo, style: _eyebrowStyle(context)),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Text(
+                            (selectedDirectoryLabel == 'appStorage'
+                                    ? strings.appStorage
+                                    : selectedDirectoryLabel) ??
+                                (selectedDirectory == null
+                                    ? strings.loadingFolder
+                                    : p.basename(selectedDirectory ?? '')),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: strings.chooseFolder,
+                        onPressed: saveNextToOriginal
+                            ? null
+                            : () async {
+                                if (Platform.isAndroid) {
+                                  final folder =
+                                      await _chooseAndroidOutputFolder();
+                                  if (folder != null) {
+                                    await _setAndroidOutputFolder(folder);
+                                    setDialogState(() {
+                                      selectedDirectory = folder['uri'];
+                                      selectedDirectoryLabel = folder['name'];
+                                      hasAndroidFolderPermission = true;
+                                    });
+                                  }
+                                } else {
+                                  final path =
+                                      await FilePicker.getDirectoryPath(
+                                        dialogTitle: strings.chooseFolder,
+                                        initialDirectory: selectedDirectory,
+                                      );
+                                  if (path != null) {
+                                    setDialogState(() {
+                                      selectedDirectory = path;
+                                      selectedDirectoryLabel = p.basename(path);
+                                    });
+                                  }
+                                }
+                              },
+                        icon: const Icon(Icons.folder_open_outlined),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(strings.closeDialog),
                 ),
-              ] else
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Text(strings.appStorage),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, (
+                    directory: selectedDirectory,
+                    directoryLabel: selectedDirectoryLabel,
+                    hasAndroidFolderPermission: hasAndroidFolderPermission,
+                    nextToOriginal: saveNextToOriginal,
+                  )),
+                  child: Text(strings.apply),
                 ),
-            ],
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(strings.closeDialog),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, (
-                directory: selectedDirectory,
-                nextToOriginal: saveNextToOriginal,
-              )),
-              child: Text(strings.apply),
-            ),
-          ],
-        ),
-      ),
-    );
+        );
     if (result == null || !mounted) return;
     setState(() {
       _outputDirectory = result.directory;
+      _outputDirectoryLabel = result.directoryLabel;
+      _hasAndroidOutputFolderPermission = result.hasAndroidFolderPermission;
       _saveNextToOriginal = result.nextToOriginal;
     });
     final preferences = await SharedPreferences.getInstance();
-    if (result.directory != null) {
+    if (result.directory != null && !Platform.isAndroid) {
       await preferences.setString('outputDirectory', result.directory!);
     }
-    await preferences.setBool('saveNextToOriginal', result.nextToOriginal);
+    if (!Platform.isAndroid) {
+      await preferences.setBool('saveNextToOriginal', result.nextToOriginal);
+    }
   }
 
   Future<void> _pickFiles() async {
@@ -350,11 +475,15 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Future<String> _availableOutputPath(MediaJob job) async {
-    final directoryPath = _saveNextToOriginal
+    final outputFolderNotReady = AppLocalizations.of(context)!
+        .outputFolderNotReady;
+    final directoryPath = Platform.isAndroid
+        ? (await getTemporaryDirectory()).path
+        : _saveNextToOriginal
         ? p.dirname(_ffmpegInputPath(job.path))
         : _outputDirectory;
     if (directoryPath == null) {
-      throw StateError(AppLocalizations.of(context)!.outputFolderNotReady);
+      throw StateError(outputFolderNotReady);
     }
     final directory = Directory(directoryPath);
     await directory.create(recursive: true);
@@ -485,10 +614,15 @@ class _ConverterPageState extends State<ConverterPage> {
       if (!await File(outputPath).exists()) {
         throw FileSystemException(strings.ffmpegNoOutput);
       }
+      var savedOutputPath = outputPath;
+      if (Platform.isAndroid) {
+        savedOutputPath = await _saveAndroidOutput(outputPath, job);
+        await File(outputPath).delete();
+      }
       setState(() {
         job.state = JobState.complete;
         job.progress = 1;
-        job.outputPath = outputPath;
+        job.outputPath = savedOutputPath;
       });
     } catch (error) {
       if (!mounted) return;
@@ -497,6 +631,40 @@ class _ConverterPageState extends State<ConverterPage> {
         job.error = error.toString();
       });
     }
+  }
+
+  Future<String> _saveAndroidOutput(String temporaryPath, MediaJob job) async {
+    final requestedName =
+        '${p.basenameWithoutExtension(job.name)}_converted.${job.outputFormat!.extension}';
+    if (!_hasAndroidOutputFolderPermission) {
+      final directory = Directory(_outputDirectory!);
+      await directory.create(recursive: true);
+      final stem = p.basenameWithoutExtension(requestedName);
+      final extension = p.extension(requestedName);
+      var suffix = 0;
+      late String candidate;
+      do {
+        candidate = p.join(
+          directory.path,
+          '$stem${suffix == 0 ? '' : '_$suffix'}$extension',
+        );
+        suffix++;
+      } while (await File(candidate).exists());
+      await File(temporaryPath).copy(candidate);
+      return candidate;
+    }
+    final savedName = await _androidOutputFolderChannel.invokeMethod<String>(
+      'saveOutputFile',
+      {
+        'sourcePath': temporaryPath,
+        'displayName': requestedName,
+        'extension': job.outputFormat!.extension,
+      },
+    );
+    if (savedName == null) {
+      throw StateError('Android did not return the saved output file name.');
+    }
+    return savedName;
   }
 
   Future<void> _convertWithSystemFfmpeg(
@@ -687,7 +855,9 @@ class _ConverterPageState extends State<ConverterPage> {
                             ),
                           ),
                         Text(
-                          strings.heroTitle,
+                          Platform.isAndroid
+                              ? strings.selectFilesToConvert
+                              : strings.heroTitle,
                           style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -1164,72 +1334,82 @@ class _DropZone extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context)!;
+    final dropZone = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 20,
+        vertical: compact ? 8 : 25,
+      ),
+      decoration: BoxDecoration(
+        color: hovering
+            ? colors.primaryContainer.withValues(alpha: .28)
+            : colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: hovering ? colors.primary : colors.outlineVariant,
+          width: hovering ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: compact ? 30 : 48,
+            height: compact ? 30 : 48,
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(Icons.file_upload_outlined, color: colors.primary),
+          ),
+          SizedBox(height: compact ? 3 : 13),
+          Text(
+            Platform.isAndroid
+                ? (compact
+                      ? strings.selectMoreFiles
+                      : strings.selectFilesToConvert)
+                : compact
+                ? (hovering ? strings.dropHover : strings.dropMoreFiles)
+                : (hovering ? strings.dropHover : strings.dropPrompt),
+            style:
+                (compact
+                        ? Theme.of(context).textTheme.bodyMedium
+                        : Theme.of(context).textTheme.titleMedium)
+                    ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          if (!compact) ...[
+            const SizedBox(height: 5),
+            Text(
+              strings.mediaKinds,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onPickFiles,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(
+                Platform.isAndroid ? strings.selectFiles : strings.browseFiles,
+              ),
+            ),
+          ] else ...[
+            TextButton.icon(
+              onPressed: onPickFiles,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(
+                Platform.isAndroid ? strings.selectFiles : strings.browseFiles,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+    if (Platform.isAndroid) return dropZone;
     return DropTarget(
       onDragEntered: (_) => onDragEntered(),
       onDragExited: (_) => onDragExited(),
       onDragDone: (details) async => onFilesDropped(details.files),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 14 : 20,
-          vertical: compact ? 8 : 25,
-        ),
-        decoration: BoxDecoration(
-          color: hovering
-              ? colors.primaryContainer.withValues(alpha: .28)
-              : colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: hovering ? colors.primary : colors.outlineVariant,
-            width: hovering ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: compact ? 30 : 48,
-              height: compact ? 30 : 48,
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(Icons.file_upload_outlined, color: colors.primary),
-            ),
-            SizedBox(height: compact ? 3 : 13),
-            Text(
-              compact
-                  ? (hovering ? strings.dropHover : strings.dropMoreFiles)
-                  : (hovering ? strings.dropHover : strings.dropPrompt),
-              style:
-                  (compact
-                          ? Theme.of(context).textTheme.bodyMedium
-                          : Theme.of(context).textTheme.titleMedium)
-                      ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            if (!compact) ...[
-              const SizedBox(height: 5),
-              Text(
-                strings.mediaKinds,
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: colors.onSurfaceVariant),
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
-                onPressed: onPickFiles,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(strings.browseFiles),
-              ),
-            ] else ...[
-              TextButton.icon(
-                onPressed: onPickFiles,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(strings.browseFiles),
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: dropZone,
     );
   }
 }

@@ -22,6 +22,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get heroTitle => 'Sleep bestanden hierheen om ze te converteren';
 
   @override
+  String get selectFilesToConvert => 'Selecteer bestanden om te converteren';
+
+  @override
+  String get selectMoreFiles => 'Selecteer meer bestanden';
+
+  @override
+  String get selectFiles => 'Bestanden selecteren';
+
+  @override
   String get heroSubtitle =>
       'Converteer video, audio en afbeeldingen rechtstreeks op je apparaat.';
 
@@ -45,6 +54,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get saveFolderSelection => 'Opslagmap selecteren';
+
+  @override
+  String get androidOutputFolderTitle =>
+      'Selecteer de uitvoermap voor conversies';
+
+  @override
+  String get androidOutputFolderMessage =>
+      'Kies waar geconverteerde bestanden moeten worden opgeslagen. Je kunt de map later wijzigen bij de opslagmapinstellingen.';
+
+  @override
+  String get androidOutputFolderButton => 'Map selecteren';
+
+  @override
+  String get androidOutputFolderLater => 'Niet nu';
+
+  @override
+  String get androidOutputFolderNotGranted =>
+      'Er is geen uitvoermap geselecteerd. Geconverteerde bestanden worden opgeslagen in de app-opslag. Je kunt later een map selecteren bij de opslagmapinstellingen.';
 
   @override
   String get saveNextToOriginal => 'Opslaan naast het origineel';
@@ -124,7 +151,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get footerAndroid =>
-      'Bestanden worden op je apparaat verwerkt · uitvoer in app-documenten';
+      'Bestanden worden op je apparaat verwerkt · uitvoer in de geselecteerde map';
 
   @override
   String get footerDesktop =>
@@ -156,6 +183,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get language => 'Taal';
+
+  @override
+  String get defaultEnglish => 'Standaard (Engels)';
 
   @override
   String get english => 'English';
