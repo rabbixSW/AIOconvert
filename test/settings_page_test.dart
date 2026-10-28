@@ -1,11 +1,28 @@
 import 'package:aioconvert/l10n/generated/app_localizations.dart';
 import 'package:aioconvert/pages/settings_page.dart';
 import 'package:aioconvert/app.dart';
+import 'package:aioconvert/main.dart' show registerAppLicense;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('AIOconvert GPL license is registered with Flutter licenses', () async {
+    registerAppLicense();
+
+    final entries = await LicenseRegistry.licenses.toList();
+    final appLicense = entries.singleWhere(
+      (entry) => entry.packages.contains('AIOconvert'),
+    );
+
+    final licenseText = appLicense.paragraphs
+        .map((paragraph) => paragraph.text)
+        .join('\n');
+    expect(licenseText, contains('GNU GENERAL PUBLIC LICENSE'));
+    expect(licenseText, contains('Version 3, 29 June 2007'));
+  });
+
   testWidgets('Settings button opens the localized settings route', (
     tester,
   ) async {
