@@ -255,7 +255,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onTap: () => showAboutDialog(
                       context: context,
                       applicationName: 'AIOconvert',
-                      applicationVersion: '1.0.0',
+                      applicationVersion: '1.0.1',
                       applicationLegalese: strings.aboutVersion,
                     ),
                   ),

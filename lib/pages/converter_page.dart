@@ -359,7 +359,7 @@ class _ConverterPageState extends State<ConverterPage> {
       final job = MediaJob(
         id: '${DateTime.now().microsecondsSinceEpoch}-${_jobs.length}',
         path: path,
-        name: name,
+        name: p.basenameWithoutExtension(path),
         kind: kind,
         hasAudio: inspection.streamTypes.contains('audio'),
         sourceFormat: p.extension(name).replaceFirst('.', '').toUpperCase(),
@@ -512,16 +512,14 @@ class _ConverterPageState extends State<ConverterPage> {
     }
     final directory = Directory(directoryPath);
     await directory.create(recursive: true);
-    final stem = p.basenameWithoutExtension(job.name);
-    final extension = job.outputFormat!.extension;
+    final requestedName = job.outputFileName(job.outputFormat!.extension);
+    final stem = p.basenameWithoutExtension(requestedName);
+    final extension = p.extension(requestedName);
     var suffix = 0;
     late String candidate;
     do {
       final suffixText = suffix == 0 ? '' : '_$suffix';
-      candidate = p.join(
-        directoryPath,
-        '${stem}_converted$suffixText.$extension',
-      );
+      candidate = p.join(directoryPath, '$stem$suffixText$extension');
       suffix++;
     } while (await File(candidate).exists());
     return candidate;
@@ -659,8 +657,7 @@ class _ConverterPageState extends State<ConverterPage> {
   }
 
   Future<String> _saveAndroidOutput(String temporaryPath, MediaJob job) async {
-    final requestedName =
-        '${p.basenameWithoutExtension(job.name)}_converted.${job.outputFormat!.extension}';
+    final requestedName = job.outputFileName(job.outputFormat!.extension);
     if (!_hasAndroidOutputFolderPermission) {
       final directory = Directory(_outputDirectory!);
       await directory.create(recursive: true);
@@ -775,6 +772,11 @@ class _ConverterPageState extends State<ConverterPage> {
       _jobs.remove(job);
       if (_jobs.isEmpty) _allFormatExtension = null;
     });
+  }
+
+  void _setJobOutputName(MediaJob job, String? name) {
+    if (_isConverting) return;
+    setState(() => job.outputName = name);
   }
 
   void _clearCompletedForNewBatch() {
@@ -927,8 +929,11 @@ class _ConverterPageState extends State<ConverterPage> {
                                 isConverting: _isConverting,
                                 onFormatChanged: (extension) =>
                                     _setJobFormat(job, extension),
+                                onOutputNameChanged: (name) =>
+                                    _setJobOutputName(job, name),
                                 onCancel: _cancelConversion,
                                 onRemove: () => _removeJob(job),
+                                key: ValueKey(job.id),
                               ),
                             ),
                           ),

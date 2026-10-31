@@ -168,7 +168,7 @@ local testing without a release key, run:
 
 ```sh
 ./scripts/build-android-apk.sh debug
-adb install dist/AIOconvert-1.0.0-arm64-v8a-debug.apk
+adb install dist/AIOconvert-<version>-<abi>-debug.apk
 ```
 
 The Android script produces a separate APK for each supported device ABI

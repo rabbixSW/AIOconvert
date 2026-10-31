@@ -40,6 +40,7 @@
   "cancel": "Konvertierung abbrechen",
   "closeDialog": "Schließen",
   "removeFile": "Datei entfernen",
+  "restoreFileName": "Originalen Dateinamen wiederherstellen",
   "convertingProgress": "Konvertierung läuft…",
   "convertingPercent": "{percent} % · wird konvertiert",
   "aboutVersion": "Ein lokaler Multimedia-Konverter mit FFmpeg.",

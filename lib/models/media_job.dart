@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 import '../media_tools.dart';
 
 enum JobState { ready, converting, complete, failed }
@@ -18,6 +20,7 @@ class MediaJob {
   final String id;
   final String path;
   final String name;
+  String? outputName;
   final MediaKind kind;
   final bool hasAudio;
   final String sourceFormat;
@@ -28,4 +31,11 @@ class MediaJob {
   double progress = 0;
   String? error;
   String? outputPath;
+
+  String outputFileName(String extension) {
+    final stem = outputName == null
+        ? '${p.basenameWithoutExtension(name)}_converted'
+        : p.basenameWithoutExtension(outputName!);
+    return '$stem.$extension';
+  }
 }

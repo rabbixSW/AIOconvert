@@ -352,6 +352,12 @@ abstract class AppLocalizations {
   /// **'Remove file'**
   String get removeFile;
 
+  /// No description provided for @restoreFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore original file name'**
+  String get restoreFileName;
+
   /// No description provided for @convertingProgress.
   ///
   /// In en, this message translates to:

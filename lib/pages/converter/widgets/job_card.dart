@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../l10n/generated/app_localizations.dart';
@@ -6,11 +7,12 @@ import '../../../media_tools.dart';
 import '../../../models/media_job.dart';
 import 'kind_label.dart';
 
-class JobCard extends StatelessWidget {
+class JobCard extends StatefulWidget {
   const JobCard({
     required this.job,
     required this.isConverting,
     required this.onFormatChanged,
+    required this.onOutputNameChanged,
     required this.onCancel,
     required this.onRemove,
     super.key,
@@ -19,8 +21,94 @@ class JobCard extends StatelessWidget {
   final MediaJob job;
   final bool isConverting;
   final ValueChanged<String?> onFormatChanged;
+  final ValueChanged<String?> onOutputNameChanged;
   final VoidCallback onCancel;
   final VoidCallback onRemove;
+
+  @override
+  State<JobCard> createState() => _JobCardState();
+}
+
+class _JobCardState extends State<JobCard> {
+  late final TextEditingController _nameController;
+  late final FocusNode _nameFocusNode;
+  bool _isEditingName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: _displayName);
+    _nameFocusNode = FocusNode()..addListener(_handleNameFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant JobCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isEditingName &&
+        (oldWidget.job.name != widget.job.name ||
+            oldWidget.job.outputName != widget.job.outputName)) {
+      _nameController.text = _displayName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameFocusNode
+      ..removeListener(_handleNameFocusChange)
+      ..dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  String get _displayName => widget.job.outputName ?? widget.job.name;
+
+  void _startEditingName() {
+    if (widget.isConverting) return;
+    _nameController.text = _displayName;
+    _nameController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _nameController.text.length,
+    );
+    setState(() => _isEditingName = true);
+  }
+
+  void _handleNameFocusChange() {
+    if (!_nameFocusNode.hasFocus && _isEditingName) {
+      _finishNameEditing(save: true);
+    }
+  }
+
+  KeyEventResult _handleNameKey(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      _finishNameEditing(save: false);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _finishNameEditing({required bool save}) {
+    if (!_isEditingName) return;
+    final typedName = _nameController.text.trim();
+    final hasValidName =
+        typedName.isNotEmpty &&
+        typedName != '.' &&
+        typedName != '..' &&
+        p.basename(typedName) == typedName &&
+        p.basenameWithoutExtension(typedName).isNotEmpty;
+    final newName = save && hasValidName ? typedName : _displayName;
+    setState(() => _isEditingName = false);
+    _nameController.text = newName;
+    if (save && newName != widget.job.outputName) {
+      widget.onOutputNameChanged(newName);
+    }
+    _nameFocusNode.unfocus();
+  }
+
+  void _restoreOriginalName() {
+    _nameController.text = widget.job.name;
+    widget.onOutputNameChanged(null);
+  }
 
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
@@ -33,6 +121,8 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final job = widget.job;
+    final isConverting = widget.isConverting;
     final colors = Theme.of(context).colorScheme;
     final strings = AppLocalizations.of(context)!;
     final narrow = MediaQuery.sizeOf(context).width < 600;
@@ -57,7 +147,7 @@ class JobCard extends StatelessWidget {
             ),
           )
           .toList(),
-      onChanged: isConverting ? null : onFormatChanged,
+      onChanged: isConverting ? null : widget.onFormatChanged,
     );
     final metadata = Row(
       children: [
@@ -100,12 +190,86 @@ class JobCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        job.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _isEditingName
+                                ? Focus(
+                                    onKeyEvent: _handleNameKey,
+                                    child: TextField(
+                                      controller: _nameController,
+                                      focusNode: _nameFocusNode,
+                                      autofocus: true,
+                                      maxLines: 1,
+                                      textInputAction: TextInputAction.done,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.deny(
+                                          RegExp(r'[/\\:*?"<>|\u0000-\u001F]'),
+                                        ),
+                                      ],
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      onSubmitted: (_) =>
+                                          _finishNameEditing(save: true),
+                                      onTapOutside: (_) =>
+                                          _finishNameEditing(save: true),
+                                    ),
+                                  )
+                                : InkWell(
+                                    onTap: isConverting
+                                        ? null
+                                        : _startEditingName,
+                                    child: Text(
+                                      _displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: AnimatedOpacity(
+                              opacity: job.outputName == null ? 0 : 1,
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                              child: IgnorePointer(
+                                ignoring:
+                                    job.outputName == null || isConverting,
+                                child: ExcludeSemantics(
+                                  excluding: job.outputName == null,
+                                  child: IconButton(
+                                    tooltip: strings.restoreFileName,
+                                    onPressed:
+                                        job.outputName == null || isConverting
+                                        ? null
+                                        : _restoreOriginalName,
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(Icons.undo_rounded),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       metadata,
@@ -120,13 +284,13 @@ class JobCard extends StatelessWidget {
                 if (job.state == JobState.converting)
                   IconButton(
                     tooltip: strings.cancel,
-                    onPressed: onCancel,
+                    onPressed: widget.onCancel,
                     icon: const Icon(Icons.close_rounded),
                   )
                 else if (!isConverting)
                   IconButton(
                     tooltip: strings.removeFile,
-                    onPressed: onRemove,
+                    onPressed: widget.onRemove,
                     icon: Icon(
                       Icons.close_rounded,
                       color: colors.onSurfaceVariant,

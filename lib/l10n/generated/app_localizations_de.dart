@@ -137,6 +137,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get removeFile => 'Datei entfernen';
 
   @override
+  String get restoreFileName => 'Originalen Dateinamen wiederherstellen';
+
+  @override
   String get convertingProgress => 'Konvertierung läuft…';
 
   @override

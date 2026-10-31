@@ -136,6 +136,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get removeFile => 'Odebrat soubor';
 
   @override
+  String get restoreFileName => 'Obnovit původní název souboru';
+
+  @override
   String get convertingProgress => 'Převádění…';
 
   @override

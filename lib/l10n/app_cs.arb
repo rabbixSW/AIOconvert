@@ -40,6 +40,7 @@
   "cancel": "Zrušit převod",
   "closeDialog": "Zavřít",
   "removeFile": "Odebrat soubor",
+  "restoreFileName": "Obnovit původní název souboru",
   "convertingProgress": "Převádění…",
   "convertingPercent": "{percent} % · převádění",
   "aboutVersion": "Offline převodník multimédií využívající FFmpeg.",
